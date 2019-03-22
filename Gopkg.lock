@@ -42,6 +42,14 @@
   revision = "d4142d59861b3779aeba32111096d43ae940e49d"
 
 [[projects]]
+  digest = "1:067d27a5520b7ab98a652f32b33785de2ffc7028e50c722c993e7ee218046a30"
+  name = "github.com/asecurityteam/transport"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b848ebf618ee2a8131b88126469b693aa035457f"
+  version = "1.1.2"
+
+[[projects]]
   digest = "1:fc53fe55ee530de09a7593d102a4aae9df3fa085abeb9fbd41becc6d56e335f2"
   name = "github.com/aws/aws-lambda-go"
   packages = [
@@ -136,6 +144,7 @@
     "github.com/asecurityteam/serverfull/pkg",
     "github.com/asecurityteam/serverfull/pkg/domain",
     "github.com/asecurityteam/settings",
+    "github.com/asecurityteam/transport",
     "github.com/aws/aws-lambda-go/lambda",
   ]
   solver-name = "gps-cdcl"

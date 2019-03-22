@@ -54,23 +54,12 @@ paths:
           description: "Success."
       x-transportd:
         backend: app
-  /{name}:
+  /process-vulnerabilities:
     get:
-      description: An API Call.
-      parameters:
-        - name: "name"
-          in: "path"
-          description: "Name of person to greet."
-          required: true
-          schema:
-            type: "string"
+      description: Get assets scanned in the last hour and publish them onto an event stream.
       responses:
         "200":
           description: "Success"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Greeting'
       x-transportd:
         backend: app
         enabled:
@@ -80,16 +69,8 @@ paths:
           - "responsevalidation"
           - "lambda"
         lambda:
-          arn: "name_or_arn"
+          arn: "process-vulnerabilities"
           async: false
           request: '{}'
           success: '{"status": 200, "bodyPassthrough": true}'
           error: '{"status": 500, "bodyPassthrough": true}'
-components:
-  schemas:
-    Greeting:
-      type: object
-      properties:
-        greeting:
-          type: string
-          description: The personal greeting.
