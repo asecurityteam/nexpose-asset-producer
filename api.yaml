@@ -1,0 +1,95 @@
+openapi: 3.0.0
+x-runtime:
+  httpserver:
+    address: ":8080"
+  logger:
+    level: "INFO"
+    output: "STDOUT"
+#  stats:
+#    output: "DATADOG"
+#    datadog:
+#      address: "statsd:8126"
+#      flushinterval: "10s"
+  signals:
+    installed:
+      - "OS"
+    os:
+      signals:
+        - 2 # SIGINT
+        - 15 # SIGTERM
+  connstate:
+    reportinterval: "5s"
+    hijackedcounter: "http.server.connstate.hijacked"
+    closedcounter: "http.server.connstate.closed"
+    idlegauge: "http.server.connstate.idle.gauge"
+    idlecounter: "http.server.connstate.idle"
+    activegauge: "http.server.connstate.active.gauge"
+    activecounter: "http.server.connstate.active"
+    newgauge: "http.server.connstate.new.gauge"
+    newcounter: "http.server.connstate.new"
+x-transportd:
+  backends:
+    - app
+  app:
+    host: "http://app:8081"
+    pool:
+      ttl: "24h"
+      count: 1
+info:
+  version: 1.0.0
+  title: "nexpose-vuln-notifier"
+  description: "A service that gets the latest Nexpose scan results and publishes the found vulnerabilities to an event stream"
+  contact:
+    name: Security Development
+    email: secdev-external@atlassian.com
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+paths:
+  /healthcheck:
+    get:
+      description: "Liveness check."
+      responses:
+        "200":
+          description: "Success."
+      x-transportd:
+        backend: app
+  /{name}:
+    get:
+      description: An API Call.
+      parameters:
+        - name: "name"
+          in: "path"
+          description: "Name of person to greet."
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Greeting'
+      x-transportd:
+        backend: app
+        enabled:
+#          - "metrics"
+          - "accesslog"
+          - "requestvalidation"
+          - "responsevalidation"
+          - "lambda"
+        lambda:
+          arn: "name_or_arn"
+          async: false
+          request: '{}'
+          success: '{"status": 200, "bodyPassthrough": true}'
+          error: '{"status": 500, "bodyPassthrough": true}'
+components:
+  schemas:
+    Greeting:
+      type: object
+      properties:
+        greeting:
+          type: string
+          description: The personal greeting.
