@@ -2,7 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
+	"net/http"
 	"os"
+	"time"
+	"strconv"
 
 	"github.com/asecurityteam/runhttp"
 	serverfull "github.com/asecurityteam/serverfull/pkg"
@@ -10,36 +14,28 @@ import (
 	"github.com/asecurityteam/settings"
 	"github.com/aws/aws-lambda-go/lambda"
 	nexposevulnprocessor "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
-	"time"
-	"net/http"
-	"strconv"
 	"github.com/asecurityteam/transport"
-	"encoding/base64"
 )
 
 func main() {
 	ctx := context.Background()
 
-	// get Nexpose URL from ENVAR
-	timeSinceLastScan, err := time.ParseDuration(os.Getenv("TIME_SINCE_LAST_NEXPOSE_SCAN"))
-	if err != nil {
-		//do error - string can't be parsed into Duration
-	}
-
 	nexposeHTTPClient, err := nexposeHTTPClient()
 	if err != nil {
- //handle error
+ 	//handle error
 	}
+	pageSize, _ := strconv.Atoi(os.Getenv("NEXPOSE_SITE_ASSET_RESPONSE_SIZE"))
 
-	processor := &nexposevulnprocessor.Processor{
-		Duration: timeSinceLastScan,
+	processor := &nexposevulnprocessor.NexposeVulnNotificationHandler{
 		NexposeHTTPClient: nexposeHTTPClient,
+		NexposeHost: os.Getenv("NEXPOSE_HOST"),
+		NexposeAssetPageSize: pageSize,
 		LogFn:  runhttp.LoggerFromContext,
 		StatFn: runhttp.StatFromContext,
 	}
 
 	lambdaHandlers := map[string]serverfulldomain.Handler{
-		"processVulnsHandler": lambda.NewHandler(processor.Handle),
+		"notification": lambda.NewHandler(processor.Handle),
 	}
 
 	source, err := settings.NewEnvSource(os.Environ())
@@ -55,9 +51,9 @@ func main() {
 	}
 }
 
-//make nexpose http client
+// nexpose http client
 func nexposeHTTPClient() (*http.Client, error) {
-	nexposeTimeout, err := strconv.Atoi(os.Getenv("DIGEST_REQUEST_TIMEOUT_MS"))
+	nexposeTimeout, err := strconv.Atoi(os.Getenv("NEXPOSE_REQUEST_TIMEOUT_MS"))
 	if err != nil {
 		return nil, err
 	}

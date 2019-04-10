@@ -36,6 +36,13 @@
 
 <Details of how to actually work with the project>
 
+### Environment Variables
+NEXPOSE_HOST
+NEXPOSE_USERNAME
+NEXPOSE_PASSWORD
+NEXPOSE_REQUEST_TIMEOUT_MS
+NEXPOSE_SITE_ASSET_RESPONSE_SIZE (default 100)
+
 <a id="markdown-status" name="status"></a>
 ## Status
 
