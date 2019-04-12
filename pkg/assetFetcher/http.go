@@ -99,33 +99,30 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 
 func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan nexpose.Asset, errChan chan error) {
 	defer wg.Done()
-	fmt.Println("inside makeRequest")
 	req, err := newNexposeSiteAssetsRequest(c.Host, siteID, page, c.PageSize)
 	if err != nil {
 		errChan <- err
+		return
 	}
-	fmt.Println("about to make request")
 	res, err := c.Client.Do(req.WithContext(ctx))
-	fmt.Println("finished making request")
 	if err != nil {
-		errChan <- err
-	}
-	defer res.Body.Close()
-	fmt.Println("reading in body")
-	respBody, err := ioutil.ReadAll(res.Body)
-
-	var siteAssetResp SiteAssetsResponse
-	fmt.Println("unmarshalling body")
-	if err := json.Unmarshal(respBody, &siteAssetResp); err != nil {
-		fmt.Printf("here is the err chan: %v", errChanl)
 		errChan <- err
 		return
 	}
-	fmt.Println("marshalled body")
+	defer res.Body.Close()
+	respBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		errChan <- err
+		return
+	}
+	var siteAssetResp SiteAssetsResponse
+	if err := json.Unmarshal(respBody, &siteAssetResp); err != nil {
+		errChan <- err
+		return
+	}
 	for _, asset := range siteAssetResp.Resources {
 		assetChan <- asset
 	}
-	fmt.Println("at the end of makeRequest")
 }
 
 func newNexposeSiteAssetsRequest(baseURL string, siteID string, page int, size int) (*http.Request, error) {
@@ -135,6 +132,5 @@ func newNexposeSiteAssetsRequest(baseURL string, siteID string, page int, size i
 	q.Set(pageQueryParam, fmt.Sprint(page))
 	q.Set(sizeQueryParam, fmt.Sprint(size))
 	u.RawQuery = q.Encode()
-	fmt.Printf("forming request: %s", u.String())
 	return http.NewRequest(http.MethodGet, u.String(), nil)
 }

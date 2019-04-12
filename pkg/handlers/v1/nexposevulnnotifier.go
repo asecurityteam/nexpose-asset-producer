@@ -40,12 +40,18 @@ func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo
 
 	for {
 		select {
-		case asset := <- assetChan:
+		case asset, ok := <- assetChan:
+			if !ok {
+				assetChan = nil
+			}
 			fmt.Printf("Got an asset off the channel, here's the ID: %v", asset.ID)
 
-		case err := <- errChan:
+		case err, ok := <- errChan:
+			if !ok {
+				errChan = nil
+			}
 			fmt.Printf("Got an error off the channel, here's the error: %s", err)
-			// do some error handling here
+			// do some error handling here, and log the erroro
 		}
 		if assetChan == nil && errChan == nil {
 			break

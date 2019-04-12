@@ -13,7 +13,7 @@ import (
 	serverfulldomain "github.com/asecurityteam/serverfull/pkg/domain"
 	"github.com/asecurityteam/settings"
 	"github.com/aws/aws-lambda-go/lambda"
-	nexposevulnprocessor "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
+	nexposevulnnotiifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
 	"github.com/asecurityteam/transport"
 )
 
@@ -26,7 +26,7 @@ func main() {
 	}
 	pageSize, _ := strconv.Atoi(os.Getenv("NEXPOSE_SITE_ASSET_RESPONSE_SIZE"))
 
-	processor := &nexposevulnprocessor.NexposeVulnNotificationHandler{
+	notifier := &nexposevulnnotiifier.NexposeVulnNotificationHandler{
 		NexposeHTTPClient: nexposeHTTPClient,
 		NexposeHost: os.Getenv("NEXPOSE_HOST"),
 		NexposeAssetPageSize: pageSize,
@@ -35,13 +35,14 @@ func main() {
 	}
 
 	lambdaHandlers := map[string]serverfulldomain.Handler{
-		"notification": lambda.NewHandler(processor.Handle),
+		"notification": lambda.NewHandler(notifier.Handle),
 	}
 
 	source, err := settings.NewEnvSource(os.Environ())
 	if err != nil {
 		panic(err.Error())
 	}
+
 	rt, err := serverfull.NewStatic(ctx, source, lambdaHandlers)
 	if err != nil {
 		panic(err.Error())
