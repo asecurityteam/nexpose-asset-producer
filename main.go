@@ -23,7 +23,7 @@ func main() {
 
 	nexposeHTTPClient := nexposeHTTPClient()
 
-	pageSize, _ := strconv.Atoi(os.Getenv("NEXPOSE_SITE_ASSET_RESPONSE_SIZE"))
+	pageSize, _ := strconv.Atoi(os.Getenv("NEXPOSE_SITE_ASSET_PAGE_SIZE"))
 
 	notifier := &nexposevulnnotiifier.NexposeVulnNotificationHandler{
 		AssetFetcher: &assetfetcher.NexposeAssetFetcher{
