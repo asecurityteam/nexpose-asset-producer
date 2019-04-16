@@ -14,6 +14,7 @@ import (
 	"github.com/asecurityteam/settings"
 	"github.com/aws/aws-lambda-go/lambda"
 	nexposevulnnotiifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
+	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetFetcher"
 	"github.com/asecurityteam/transport"
 )
 
@@ -27,9 +28,11 @@ func main() {
 	pageSize, _ := strconv.Atoi(os.Getenv("NEXPOSE_SITE_ASSET_RESPONSE_SIZE"))
 
 	notifier := &nexposevulnnotiifier.NexposeVulnNotificationHandler{
-		NexposeHTTPClient: nexposeHTTPClient,
-		NexposeHost: os.Getenv("NEXPOSE_HOST"),
-		NexposeAssetPageSize: pageSize,
+		AssetFetcher: &assetFetcher.NexposeAssetFetcher{
+			HTTPClient: nexposeHTTPClient,
+			Host: os.Getenv("NEXPOSE_HOST"),
+			PageSize: pageSize,
+		},
 		LogFn:  runhttp.LoggerFromContext,
 		StatFn: runhttp.StatFromContext,
 	}

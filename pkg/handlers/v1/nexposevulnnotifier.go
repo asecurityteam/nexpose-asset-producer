@@ -2,11 +2,7 @@ package v1
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetFetcher"
 )
 
 // ScanInfo represents the incoming payload
@@ -17,55 +13,50 @@ type ScanInfo struct {
 	SiteID string `json:"site_id"`
 }
 
-// Processor is a lambda handler that fetches Nexpose Vulns and sends them off to an event stream
+// NexposeVulnNotificationHandler is a lambda handler that fetches Nexpose Assets and sends them to an event stream
 type NexposeVulnNotificationHandler struct {
-	NexposeHTTPClient *http.Client
-	NexposeHost string
-	NexposeAssetPageSize int
+	AssetFetcher domain.AssetFetcher
 	LogFn  domain.LogFn
 	StatFn domain.StatFn
 }
 
-
-// Handle is an AWS Lambda handler that takes in a ScanID and SiteID for a Nexpose scan that has completed.
-//TODO more comment here
+// Handle is an AWS Lambda handler that takes in a ScanID and SiteID for a Nexpose scan that has completed,
+// get all the Assets in the site that was scanned, hydrates the asset with the vulnerabilities that were found
+// on that asset and publishes the asset to a stream
 func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo) {
+	logger := h.LogFn(ctx)
 
-	fetcher := assetFetcher.NexposeAssetFetcher{
-		Client: h.NexposeHTTPClient,
-		Host: h.NexposeHost,
-		PageSize: h.NexposeAssetPageSize,
-	}
-	assetChan, errChan := fetcher.FetchAssets(ctx, in.SiteID)
+	assetChan, errChan := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
 
+	// this loop currently logs when it receives an asset or error from their respective channels
+	// The future issues will take these assets and use them to call Nexpose again to get heir vulnerabilities
 	for {
 		select {
-		case asset, ok := <- assetChan:
+		case _, ok := <- assetChan:
 			if !ok {
 				assetChan = nil
+			} else {
+				logger.Info("Got an asset off the channel")
 			}
-			fmt.Printf("Got an asset off the channel, here's the ID: %v", asset.ID)
-
-		case err, ok := <- errChan:
+		case _, ok := <- errChan:
 			if !ok {
 				errChan = nil
+			} else {
+				logger.Info("Got an error off the channel")
 			}
-			fmt.Printf("Got an error off the channel, here's the error: %s", err)
-			// do some error handling here, and log the erroro
 		}
 		if assetChan == nil && errChan == nil {
 			break
 		}
 	}
 
-	// for each asset, hydrate it with vulnerability information:
-	// get the list of vulnerability instances for that asset
-	// by calling /api/3/assets/{id}/vulnerabilities
-	// and put the result in here
+	// TODO: SECD-441
+	// for each asset:
+	//   get the list of vulnerabilities for that asset /api/3/assets/{id}/vulnerabilities and
+	//   for each vulnerability on the asset:
+	//     get the complete vulnerability information /api/3/vulnerabilities/{id}
 
-	// for each vuln instance, get the Vuln info
-	// https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getVulnerability
-
-	// then publish it to the queue
+	// TODO: SECD-442
+	// once the asset is hydrated with the vulnerability details, publish it to the queue
 
 }
