@@ -52,12 +52,6 @@ paths:
       responses:
         "200":
           description: "Success."
-        "400":
-          description: "Invalid input"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
       x-transportd:
         backend: app
   /notification:
@@ -72,6 +66,12 @@ paths:
         responses:
           "202":
             description: "Accepted"
+          "400":
+            description: "Invalid input"
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
         x-transportd:
           backend: app
           enabled:
