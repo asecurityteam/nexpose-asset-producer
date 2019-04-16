@@ -2,13 +2,12 @@ package assetfetcher
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
-
-	"encoding/json"
-	"io/ioutil"
 	"sync"
 
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain/nexpose"
