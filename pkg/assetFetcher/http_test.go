@@ -1,11 +1,10 @@
-package assetFetcher
+package assetfetcher
 
 import (
-
 	"context"
 	"encoding/json"
-	"net/http/httptest"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 	"testing"
 
@@ -20,19 +19,22 @@ func TestFetchAssetsSuccess(t *testing.T) {
 	}
 	resp := SiteAssetsResponse{
 		Resources: []nexpose.Asset{expectedAsset},
-		Page: Page{},
-		Links:nexpose.Link{},
+		Page:      Page{},
+		Links:     nexpose.Link{},
 	}
-	respJSON,_ := json.Marshal(resp)
+	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(respJSON)
+		_, err := w.Write(respJSON)
+		if err != nil {
+			t.Fatalf("Unexpected error occurred %v ", err)
+		}
 	}))
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: ts.Client(),
-		Host: ts.URL,
-		PageSize: 100,
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -69,8 +71,8 @@ func TestFetchAssetsBadResponseError(t *testing.T) {
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: ts.Client(),
-		Host: ts.URL,
-		PageSize: 100,
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -102,14 +104,17 @@ func TestFetchAssetsBadResponseError(t *testing.T) {
 func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("fail"))
+		_, err := w.Write([]byte("fail"))
+		if err != nil {
+			t.Fatalf("Unexpected error occurred %v ", err)
+		}
 	}))
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: ts.Client(),
-		Host: ts.URL,
-		PageSize: 100,
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -145,19 +150,22 @@ func TestFetchAssetsHTTPError(t *testing.T) {
 	}
 	resp := SiteAssetsResponse{
 		Resources: []nexpose.Asset{expectedAsset},
-		Page: Page{},
-		Links:nexpose.Link{},
+		Page:      Page{},
+		Links:     nexpose.Link{},
 	}
-	respJSON,_ := json.Marshal(resp)
+	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(respJSON)
+		_, err := w.Write(respJSON)
+		if err != nil {
+			t.Fatalf("Unexpected error occurred %v ", err)
+		}
 	}))
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: ts.Client(),
-		Host: "fail://",
-		PageSize: 100,
+		Host:       "fail://",
+		PageSize:   100,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -193,19 +201,22 @@ func TestFetchAssetsWithInvalidHost(t *testing.T) {
 	}
 	resp := SiteAssetsResponse{
 		Resources: []nexpose.Asset{asset},
-		Page: Page{},
-		Links:nexpose.Link{},
+		Page:      Page{},
+		Links:     nexpose.Link{},
 	}
-	respJSON,_ := json.Marshal(resp)
+	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(respJSON)
+		_, err := w.Write(respJSON)
+		if err != nil {
+			t.Fatalf("Unexpected error occurred %v ", err)
+		}
 	}))
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: ts.Client(),
-		Host: "~!@#$%^&*()_+:?><!@#$%^&*())_:",
-		PageSize: 100,
+		Host:       "~!@#$%^&*()_+:?><!@#$%^&*())_:",
+		PageSize:   100,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -242,20 +253,23 @@ func TestMakeRequestSuccess(t *testing.T) {
 	}
 	resp := SiteAssetsResponse{
 		Resources: []nexpose.Asset{asset},
-		Page: Page{},
-		Links:nexpose.Link{},
+		Page:      Page{},
+		Links:     nexpose.Link{},
 	}
 
-	respJSON,_ := json.Marshal(resp)
+	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(respJSON)
+		_, err := w.Write(respJSON)
+		if err != nil {
+			t.Fatalf("Unexpected error occurred %v ", err)
+		}
 	}))
 	defer ts.Close()
 
 	assetFetcher := &NexposeAssetFetcher{
-		HTTPClient:   ts.Client(),
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	var wg sync.WaitGroup
@@ -273,19 +287,22 @@ func TestMakeRequestSuccess(t *testing.T) {
 func TestMakeRequestWithInvalidHost(t *testing.T) {
 	resp := SiteAssetsResponse{
 		Resources: []nexpose.Asset{},
-		Page: Page{},
-		Links:nexpose.Link{},
+		Page:      Page{},
+		Links:     nexpose.Link{},
 	}
-	respJSON,_ := json.Marshal(resp)
+	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(respJSON)
+		_, err := w.Write(respJSON)
+		if err != nil {
+			t.Fatalf("Unexpected error occurred %v ", err)
+		}
 	}))
 	defer ts.Close()
 	c := ts.Client()
 	assetFetcher := &NexposeAssetFetcher{
-		HTTPClient:   c,
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: c,
+		Host:       "~!@#$%^&*()_+:?><!@#$%^&*())_:",
+		PageSize:   100,
 	}
 
 	var wg sync.WaitGroup
@@ -299,26 +316,28 @@ func TestMakeRequestWithInvalidHost(t *testing.T) {
 	close(assetChan)
 	close(errChan)
 
-	assert.Equal(t, nexpose.Asset{}, <-assetChan) // An empty asset will be added to assetChan if there's a response with no asset
-	assert.Nil(t, <-errChan)
+	assert.IsType(t, &URLParsingError{}, <-errChan)
 }
 
 func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	resp := SiteAssetsResponse{
 		Resources: []nexpose.Asset{},
-		Page: Page{},
-		Links:nexpose.Link{},
+		Page:      Page{},
+		Links:     nexpose.Link{},
 	}
-	respJSON,_ := json.Marshal(resp)
+	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write(respJSON)
+		_, err := w.Write(respJSON)
+		if err != nil {
+			t.Fatalf("Unexpected error occurred %v ", err)
+		}
 	}))
 	defer ts.Close()
 	c := ts.Client()
 	assetFetcher := &NexposeAssetFetcher{
-		HTTPClient:   c,
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: c,
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	var wg sync.WaitGroup
@@ -341,9 +360,9 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 	defer ts.Close()
 	c := ts.Client()
 	assetFetcher := &NexposeAssetFetcher{
-		HTTPClient:   c,
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: c,
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	var wg sync.WaitGroup
@@ -355,9 +374,8 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 	wg.Add(1)
 	assetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
 
-	assert.IsType(t, &ResponseParsingError{}, <-errChan) // This will cause an error to be returned from json.Unmarshal
+	assert.IsType(t, &ResponseParsingError{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
 }
-
 
 func TestNewNexposeSiteAssetsRequestSuccess(t *testing.T) {
 	req, err := newNexposeSiteAssetsRequest("http://nexpose-instance.com", "siteID", 1, 100)

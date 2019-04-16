@@ -5,12 +5,11 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/golang/mock/gomock"
-	"github.com/asecurityteam/runhttp"
 	"github.com/asecurityteam/logevent"
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain/nexpose"
+	"github.com/asecurityteam/runhttp"
+	"github.com/golang/mock/gomock"
 )
-
 
 func TestNexposeVulnNotificationHandler(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
@@ -22,7 +21,7 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 	errChan := make(chan error)
 
 	asset := nexpose.Asset{
-		ID: 123,
+		ID: 12345,
 	}
 
 	go func() {
@@ -31,12 +30,12 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 		close(errChan)
 	}()
 
-	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "123").Return(assetChan, errChan)
+	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetChan, errChan)
 
 	handler := NexposeVulnNotificationHandler{
 		AssetFetcher: assetFetcher,
-		LogFn:  runhttp.LoggerFromContext,
-		StatFn: runhttp.StatFromContext,
+		LogFn:        runhttp.LoggerFromContext,
+		StatFn:       runhttp.StatFromContext,
 	}
 
 	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))

@@ -22,11 +22,45 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:7a3676b59256c1c3c046536e2fbc9fb6be69c213fefdcfd5108a3e71c1d11994"
+  name = "github.com/asecurityteam/serverfull"
+  packages = [
+    "pkg",
+    "pkg/domain",
+    "pkg/handlerfetcher",
+    "pkg/handlers/v1",
+  ]
+  pruneopts = "UT"
+  revision = "81a2983288791c4aad176a3e98d809b925b65d90"
+
+[[projects]]
+  branch = "master"
   digest = "1:391bbf4e67d50d74c1bb7dfad79222181327ff6d9a32324ed022b12051b5d5e8"
   name = "github.com/asecurityteam/settings"
   packages = ["."]
   pruneopts = "UT"
   revision = "d4142d59861b3779aeba32111096d43ae940e49d"
+
+[[projects]]
+  digest = "1:067d27a5520b7ab98a652f32b33785de2ffc7028e50c722c993e7ee218046a30"
+  name = "github.com/asecurityteam/transport"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b848ebf618ee2a8131b88126469b693aa035457f"
+  version = "1.1.2"
+
+[[projects]]
+  digest = "1:fc53fe55ee530de09a7593d102a4aae9df3fa085abeb9fbd41becc6d56e335f2"
+  name = "github.com/aws/aws-lambda-go"
+  packages = [
+    "lambda",
+    "lambda/handlertrace",
+    "lambda/messages",
+    "lambdacontext",
+  ]
+  pruneopts = "UT"
+  revision = "08d251dc58f204411d79012fd6f1beefb7107fea"
+  version = "v1.10.0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -43,6 +77,17 @@
   pruneopts = "UT"
   revision = "4966fc68f5b7593aafa6cbbba2d65ec6e1416047"
   version = "v1.1.0"
+
+[[projects]]
+  digest = "1:cb53653e4e410ef91f3a83568464ef966e1732ad9a00b2719571f90eae9a15a7"
+  name = "github.com/go-chi/chi"
+  packages = [
+    ".",
+    "middleware",
+  ]
+  pruneopts = "UT"
+  revision = "08d9051ef6546d57c5dca8eae13e6df362e2d568"
+  version = "v3.3.4"
 
 [[projects]]
   digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
@@ -129,6 +174,11 @@
   input-imports = [
     "github.com/asecurityteam/logevent",
     "github.com/asecurityteam/runhttp",
+    "github.com/asecurityteam/serverfull/pkg",
+    "github.com/asecurityteam/serverfull/pkg/domain",
+    "github.com/asecurityteam/settings",
+    "github.com/asecurityteam/transport",
+    "github.com/aws/aws-lambda-go/lambda",
     "github.com/golang/mock/gomock",
     "github.com/stretchr/testify/assert",
   ]

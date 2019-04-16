@@ -1,4 +1,4 @@
-package assetFetcher
+package assetfetcher
 
 import (
 	"context"
@@ -7,18 +7,19 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain/nexpose"
 	"encoding/json"
 	"io/ioutil"
 	"sync"
+
+	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain/nexpose"
 )
 
 // This const block helps format our request to the Nexpose sites asset endpoint:
 // GET /api/3/sites/{id}/assets (doc: https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getSiteAssets)
 const (
-	basePath = "/api/3"
-	nexposeSite = "/sites"
-	nexposeAssets = "/assets"
+	basePath       = "/api/3"
+	nexposeSite    = "/sites"
+	nexposeAssets  = "/assets"
 	pageQueryParam = "page" // The index of the page (zero-based) to retrieve.
 	sizeQueryParam = "size" // The number of records per page to retrieve.
 
@@ -27,9 +28,9 @@ const (
 // SiteAssetsResponse is the structure of the Nexpose site assets response
 type SiteAssetsResponse struct {
 	// Hypermedia links to corresponding or related resources
-	Links 	  nexpose.Link
+	Links nexpose.Link
 	// The details of pagination indicating which page was returned, and how the remaining pages can be retrieved.
-	Page 	  Page
+	Page Page
 	// The page of resources returned (resources = assets)
 	Resources []nexpose.Asset
 }
@@ -49,9 +50,9 @@ type Page struct {
 // NexposeAssetFetcher is used to create a new
 type NexposeAssetFetcher struct {
 	// The Nexpose HTTP Cient
-	HTTPClient	 *http.Client
+	HTTPClient *http.Client
 	// The Nexpose host that points to your instance
-	Host	 string
+	Host string
 	// The number of assets that should be returned at one time
 	PageSize int
 }
@@ -60,7 +61,7 @@ type NexposeAssetFetcher struct {
 // It returns a channel of assets and a channel of errors that can by asynchronously listened to.
 func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan nexpose.Asset, <-chan error) {
 	var errChan = make(chan error)
-	var assetChan= make(chan nexpose.Asset)
+	var assetChan = make(chan nexpose.Asset)
 
 	go func() {
 		var wg sync.WaitGroup
@@ -107,11 +108,10 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 			currentPage++
 		}
 		wg.Wait()
-	} ()
+	}()
 
 	return assetChan, errChan
 }
-
 
 func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan nexpose.Asset, errChan chan error) {
 	defer wg.Done()

@@ -5,33 +5,31 @@ import (
 	"encoding/base64"
 	"net/http"
 	"os"
-	"time"
 	"strconv"
+	"time"
 
+	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetfetcher"
+	nexposevulnnotiifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
 	"github.com/asecurityteam/runhttp"
 	serverfull "github.com/asecurityteam/serverfull/pkg"
 	serverfulldomain "github.com/asecurityteam/serverfull/pkg/domain"
 	"github.com/asecurityteam/settings"
-	"github.com/aws/aws-lambda-go/lambda"
-	nexposevulnnotiifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetFetcher"
 	"github.com/asecurityteam/transport"
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 func main() {
 	ctx := context.Background()
 
-	nexposeHTTPClient, err := nexposeHTTPClient()
-	if err != nil {
- 	//handle error
-	}
+	nexposeHTTPClient := nexposeHTTPClient()
+
 	pageSize, _ := strconv.Atoi(os.Getenv("NEXPOSE_SITE_ASSET_RESPONSE_SIZE"))
 
 	notifier := &nexposevulnnotiifier.NexposeVulnNotificationHandler{
-		AssetFetcher: &assetFetcher.NexposeAssetFetcher{
+		AssetFetcher: &assetfetcher.NexposeAssetFetcher{
 			HTTPClient: nexposeHTTPClient,
-			Host: os.Getenv("NEXPOSE_HOST"),
-			PageSize: pageSize,
+			Host:       os.Getenv("NEXPOSE_HOST"),
+			PageSize:   pageSize,
 		},
 		LogFn:  runhttp.LoggerFromContext,
 		StatFn: runhttp.StatFromContext,
@@ -55,11 +53,10 @@ func main() {
 	}
 }
 
-// nexpose http client
-func nexposeHTTPClient() (*http.Client, error) {
+func nexposeHTTPClient() *http.Client {
 	nexposeTimeout, err := strconv.Atoi(os.Getenv("NEXPOSE_REQUEST_TIMEOUT_MS"))
 	if err != nil {
-		return nil, err
+		panic(err.Error())
 	}
 	var retryDecorator = transport.NewRetrier(
 		transport.NewPercentJitteredBackoffPolicy(transport.NewFixedBackoffPolicy(50*time.Millisecond), .25),
@@ -70,7 +67,7 @@ func nexposeHTTPClient() (*http.Client, error) {
 
 	var headerDecorator = transport.NewHeader(
 		func(*http.Request) (string, string) {
-			return "Authorization",  basicAuth(os.Getenv("NEXPOSE_USERNAME"), os.Getenv("NEXPOSE_PASSWORD"))
+			return "Authorization", basicAuth(os.Getenv("NEXPOSE_USERNAME"), os.Getenv("NEXPOSE_PASSWORD"))
 		})
 
 	var chain = transport.Chain{
@@ -85,7 +82,7 @@ func nexposeHTTPClient() (*http.Client, error) {
 	var client = &http.Client{
 		Transport: chain.Apply(t),
 	}
-	return client, nil
+	return client
 }
 
 func basicAuth(username, password string) string {

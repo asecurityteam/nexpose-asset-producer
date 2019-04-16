@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 )
 
@@ -16,8 +17,8 @@ type ScanInfo struct {
 // NexposeVulnNotificationHandler is a lambda handler that fetches Nexpose Assets and sends them to an event stream
 type NexposeVulnNotificationHandler struct {
 	AssetFetcher domain.AssetFetcher
-	LogFn  domain.LogFn
-	StatFn domain.StatFn
+	LogFn        domain.LogFn
+	StatFn       domain.StatFn
 }
 
 // Handle is an AWS Lambda handler that takes in a ScanID and SiteID for a Nexpose scan that has completed,
@@ -32,13 +33,13 @@ func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo
 	// The future issues will take these assets and use them to call Nexpose again to get heir vulnerabilities
 	for {
 		select {
-		case _, ok := <- assetChan:
+		case _, ok := <-assetChan:
 			if !ok {
 				assetChan = nil
 			} else {
 				logger.Info("Got an asset off the channel")
 			}
-		case _, ok := <- errChan:
+		case _, ok := <-errChan:
 			if !ok {
 				errChan = nil
 			} else {
