@@ -13,14 +13,14 @@ func (e *URLParsingError) Error() string {
 	return fmt.Sprintf("Error parsing Nexpose URL (%v): %v", e.NexposeURL, e.Inner.Error())
 }
 
-// ResponseParsingError when trying to parse a Nexpose response
-type ResponseParsingError struct {
+// ErrorParsingJSONResponse when trying to parse a Nexpose response
+type ErrorParsingJSONResponse struct {
 	Inner      error
 	NexposeURL string
 }
 
-// Error returns a ResponseParsingError
-func (e *ResponseParsingError) Error() string {
+// Error returns an ErrorParsingJSONResponse
+func (e *ErrorParsingJSONResponse) Error() string {
 	return fmt.Sprintf("Error parsing Nexpose response from %v: %v", e.NexposeURL, e.Inner.Error())
 }
 

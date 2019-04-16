@@ -89,7 +89,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 
 		var siteAssetResp SiteAssetsResponse
 		if err := json.Unmarshal(respBody, &siteAssetResp); err != nil {
-			errChan <- &ResponseParsingError{err, req.URL.String()}
+			errChan <- &ErrorParsingJSONResponse{err, req.URL.String()}
 			return
 		}
 
@@ -132,7 +132,7 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 	}
 	var siteAssetResp SiteAssetsResponse
 	if err := json.Unmarshal(respBody, &siteAssetResp); err != nil {
-		errChan <- &ResponseParsingError{err, req.URL.String()}
+		errChan <- &ErrorParsingJSONResponse{err, req.URL.String()}
 		return
 	}
 	for _, asset := range siteAssetResp.Resources {

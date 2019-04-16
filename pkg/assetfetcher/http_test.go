@@ -140,7 +140,7 @@ func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
 			break
 		}
 	}
-	assert.IsType(t, &ResponseParsingError{}, actualError)
+	assert.IsType(t, &ErrorParsingJSONResponse{}, actualError)
 }
 
 func TestFetchAssetsHTTPError(t *testing.T) {
@@ -374,7 +374,7 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 	wg.Add(1)
 	assetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
 
-	assert.IsType(t, &ResponseParsingError{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
+	assert.IsType(t, &ErrorParsingJSONResponse{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
 }
 
 func TestNewNexposeSiteAssetsRequestSuccess(t *testing.T) {
