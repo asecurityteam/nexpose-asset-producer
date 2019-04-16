@@ -5,11 +5,11 @@ x-runtime:
   logger:
     level: "INFO"
     output: "STDOUT"
-#  stats:
-#    output: "DATADOG"
-#    datadog:
-#      address: "statsd:8126"
-#      flushinterval: "10s"
+  stats:
+    output: "DATADOG"
+    datadog:
+      address: "statsd:8126"
+      flushinterval: "10s"
   signals:
     installed:
       - "OS"
@@ -75,7 +75,7 @@ paths:
         x-transportd:
           backend: app
           enabled:
-  #          - "metrics"
+            - "metrics"
             - "accesslog"
             - "requestvalidation"
             - "lambda"
