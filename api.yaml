@@ -84,6 +84,7 @@ paths:
             async: true
             request: '#! json .Request.Body !#'
             success: '{"status": 202, "bodyPassthrough": true}'
+            error: '{"status": 500, "bodyPassthrough": true}'
 components:
   schemas:
     ScanNotification:
