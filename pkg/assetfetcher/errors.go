@@ -48,7 +48,7 @@ func (e *NexposeHTTPRequestError) Error() string {
 
 // ErrorFetchingAssets represents an error we get when trying to fetch assets
 type ErrorFetchingAssets struct {
-	Inner      error
+	Inner error
 }
 
 // Error returns an ErrorFetchingAssets

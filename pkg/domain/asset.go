@@ -1,4 +1,4 @@
-package nexpose
+package domain
 
 import (
 	"os"
@@ -65,6 +65,14 @@ type Address struct {
 	Mac string `json:"mac,omitempty"`
 }
 
+// Configuration represents a name-value pair
+type Configuration struct {
+	// The name of the configuration value.
+	Name string `json:"name"`
+	// The configuration value.
+	Value string `json:"value,omitempty"`
+}
+
 // Database represents associated databases
 type Database struct {
 	// The description of the database instance.
@@ -98,6 +106,14 @@ type HostName struct {
 	Name string `json:"name"`
 	// The source used to detect the host name. `user` indicates the host name source is user-supplied (e.g. in a site target definition).
 	Source string `json:"source,omitempty"`
+}
+
+// Link represents a hyperlink and relation
+type Link struct {
+	// A hypertext reference.
+	Href string `json:"href,omitempty"`
+	// The link relation type.
+	Rel string `json:"rel,omitempty"`
 }
 
 // UniqueID represents unique identifiers associated with an asset

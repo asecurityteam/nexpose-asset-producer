@@ -10,7 +10,7 @@ import (
 	"path"
 	"sync"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain/nexpose"
+	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 )
 
 // This const block helps format our request to the Nexpose sites asset endpoint:
@@ -27,11 +27,11 @@ const (
 // SiteAssetsResponse is the structure of the Nexpose site assets response
 type SiteAssetsResponse struct {
 	// Hypermedia links to corresponding or related resources
-	Links nexpose.Link
+	Links domain.Link
 	// The details of pagination indicating which page was returned, and how the remaining pages can be retrieved.
 	Page Page
 	// The page of resources returned (resources = assets)
-	Resources []nexpose.Asset
+	Resources []domain.Asset
 }
 
 // Page represents the JSON object Nexpose provides to help paginate through all the Assets
@@ -58,10 +58,9 @@ type NexposeAssetFetcher struct {
 
 // FetchAssets gets all the assets for a given site ID from Nexpose, with pagination.
 // It returns a channel of assets and a channel of errors that can by asynchronously listened to.
-func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan nexpose.Asset, <-chan error) {
-	var errChan = make(chan error)
-	var assetChan = make(chan nexpose.Asset)
-
+func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan domain.Asset, <-chan error) {
+	errChan := make(chan error)
+	assetChan := make(chan domain.Asset)
 	go func() {
 		var wg sync.WaitGroup
 		defer close(assetChan)
@@ -96,6 +95,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 		for _, asset := range siteAssetResp.Resources {
 			assetChan <- asset
 		}
+
 		// We've gotten the first page (page 0) and added the assets to the channel,
 		// so here we'll increment the currentPage to start on page 1 and use TotalPages, which is
 		// the total number of pages of assets that Nexpose has, to paginate through to get all the assets
@@ -112,7 +112,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	return assetChan, errChan
 }
 
-func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan nexpose.Asset, errChan chan error) {
+func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan domain.Asset, errChan chan error) {
 	defer wg.Done()
 	req, err := newNexposeSiteAssetsRequest(c.Host, siteID, page, c.PageSize)
 	if err != nil {
@@ -151,5 +151,5 @@ func newNexposeSiteAssetsRequest(host string, siteID string, page int, size int)
 	q.Set(pageQueryParam, fmt.Sprint(page))
 	q.Set(sizeQueryParam, fmt.Sprint(size))
 	u.RawQuery = q.Encode()
-	return http.NewRequest(http.MethodGet, u.String(), nil)
+	return http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 }

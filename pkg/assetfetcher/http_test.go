@@ -8,19 +8,19 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain/nexpose"
+	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFetchAssetsSuccess(t *testing.T) {
-	expectedAsset := nexpose.Asset{
+	expectedAsset := domain.Asset{
 		IP: "127.0.0.1",
 		ID: 123456,
 	}
 	resp := SiteAssetsResponse{
-		Resources: []nexpose.Asset{expectedAsset},
+		Resources: []domain.Asset{expectedAsset},
 		Page:      Page{},
-		Links:     nexpose.Link{},
+		Links:     domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +39,7 @@ func TestFetchAssetsSuccess(t *testing.T) {
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
 
-	var actualAsset nexpose.Asset
+	var actualAsset domain.Asset
 	for {
 		select {
 		case respAsset, ok := <-assetChan:
@@ -142,14 +142,14 @@ func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
 }
 
 func TestFetchAssetsHTTPError(t *testing.T) {
-	expectedAsset := nexpose.Asset{
+	expectedAsset := domain.Asset{
 		IP: "127.0.0.1",
 		ID: 123456,
 	}
 	resp := SiteAssetsResponse{
-		Resources: []nexpose.Asset{expectedAsset},
+		Resources: []domain.Asset{expectedAsset},
 		Page:      Page{},
-		Links:     nexpose.Link{},
+		Links:     domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -193,14 +193,14 @@ func TestFetchAssetsHTTPError(t *testing.T) {
 }
 
 func TestFetchAssetsWithInvalidHost(t *testing.T) {
-	asset := nexpose.Asset{
+	asset := domain.Asset{
 		IP: "127.0.0.1",
 		ID: 123456,
 	}
 	resp := SiteAssetsResponse{
-		Resources: []nexpose.Asset{asset},
+		Resources: []domain.Asset{asset},
 		Page:      Page{},
-		Links:     nexpose.Link{},
+		Links:     domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -244,14 +244,14 @@ func TestFetchAssetsWithInvalidHost(t *testing.T) {
 }
 
 func TestMakeRequestSuccess(t *testing.T) {
-	asset := nexpose.Asset{
+	asset := domain.Asset{
 		IP: "127.0.0.1",
 		ID: 123456,
 	}
 	resp := SiteAssetsResponse{
-		Resources: []nexpose.Asset{asset},
+		Resources: []domain.Asset{asset},
 		Page:      Page{},
-		Links:     nexpose.Link{},
+		Links:     domain.Link{},
 	}
 
 	respJSON, _ := json.Marshal(resp)
@@ -270,7 +270,7 @@ func TestMakeRequestSuccess(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan nexpose.Asset, 1)
+	assetChan := make(chan domain.Asset, 1)
 	errChan := make(chan error, 1)
 	defer close(assetChan)
 	defer close(errChan)
@@ -294,7 +294,7 @@ func TestMakeRequestWithBadResponse(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan nexpose.Asset, 1)
+	assetChan := make(chan domain.Asset, 1)
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
@@ -309,9 +309,9 @@ func TestMakeRequestWithBadResponse(t *testing.T) {
 
 func TestMakeRequestWithInvalidHost(t *testing.T) {
 	resp := SiteAssetsResponse{
-		Resources: []nexpose.Asset{},
+		Resources: []domain.Asset{},
 		Page:      Page{},
-		Links:     nexpose.Link{},
+		Links:     domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -329,7 +329,7 @@ func TestMakeRequestWithInvalidHost(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan nexpose.Asset, 1)
+	assetChan := make(chan domain.Asset, 1)
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
@@ -344,9 +344,9 @@ func TestMakeRequestWithInvalidHost(t *testing.T) {
 
 func TestMakeRequestHTTPError(t *testing.T) {
 	resp := SiteAssetsResponse{
-		Resources: []nexpose.Asset{},
+		Resources: []domain.Asset{},
 		Page:      Page{},
-		Links:     nexpose.Link{},
+		Links:     domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -364,7 +364,7 @@ func TestMakeRequestHTTPError(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan nexpose.Asset, 1)
+	assetChan := make(chan domain.Asset, 1)
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
@@ -381,9 +381,9 @@ func TestMakeRequestHTTPError(t *testing.T) {
 
 func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	resp := SiteAssetsResponse{
-		Resources: []nexpose.Asset{},
+		Resources: []domain.Asset{},
 		Page:      Page{},
-		Links:     nexpose.Link{},
+		Links:     domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -401,7 +401,7 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan nexpose.Asset, 1)
+	assetChan := make(chan domain.Asset, 1)
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
@@ -411,7 +411,7 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	close(assetChan)
 	close(errChan)
 
-	assert.Equal(t, nexpose.Asset{}, <-assetChan) // An empty asset will be added to assetChan if there's a response with no asset
+	assert.Equal(t, domain.Asset{}, <-assetChan) // An empty asset will be added to assetChan if there's a response with no asset
 	assert.Nil(t, <-errChan)
 }
 
@@ -426,7 +426,7 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan nexpose.Asset, 1)
+	assetChan := make(chan domain.Asset, 1)
 	errChan := make(chan error, 1)
 	defer close(assetChan)
 	defer close(errChan)

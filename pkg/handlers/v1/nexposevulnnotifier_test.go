@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/asecurityteam/logevent"
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain/nexpose"
+	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 	"github.com/asecurityteam/runhttp"
 	"github.com/golang/mock/gomock"
 )
@@ -17,10 +17,10 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 
 	assetFetcher := NewMockAssetFetcher(mockCtrl)
 
-	assetChan := make(chan nexpose.Asset)
+	assetChan := make(chan domain.Asset)
 	errChan := make(chan error)
 
-	asset := nexpose.Asset{
+	asset := domain.Asset{
 		ID: 12345,
 	}
 
