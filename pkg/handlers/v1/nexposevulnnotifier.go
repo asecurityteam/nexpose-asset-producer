@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
+	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/logs"
 )
 
 // ScanInfo represents the incoming payload
@@ -26,6 +27,7 @@ type NexposeVulnNotificationHandler struct {
 // on that asset and publishes the asset to a stream
 func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo) {
 	logger := h.LogFn(ctx)
+	stater := h.StatFn(ctx)
 
 	assetChan, errChan := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
 
@@ -37,27 +39,21 @@ func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo
 			if !ok {
 				assetChan = nil
 			} else {
-				logger.Info("Got an asset off the channel")
+				// TODO this is where we'll publish the asset to the queue SECD-442
+				stater.Count("assetreceived.success", 1)
 			}
-		case _, ok := <-errChan:
+		case err, ok := <-errChan:
 			if !ok {
 				errChan = nil
 			} else {
-				logger.Info("Got an error off the channel")
+				stater.Count("assetfetch.error", 1)
+				logger.Error(logs.AssetFetchFail{
+					Reason: err.Error(),
+				})
 			}
 		}
 		if assetChan == nil && errChan == nil {
 			break
 		}
 	}
-
-	// TODO: SECD-441
-	// for each asset:
-	//   get the list of vulnerabilities for that asset /api/3/assets/{id}/vulnerabilities and
-	//   for each vulnerability on the asset:
-	//     get the complete vulnerability information /api/3/vulnerabilities/{id}
-
-	// TODO: SECD-442
-	// once the asset is hydrated with the vulnerability details, publish it to the queue
-
 }
