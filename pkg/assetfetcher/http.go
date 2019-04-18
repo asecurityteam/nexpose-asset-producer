@@ -10,6 +10,8 @@ import (
 	"path"
 	"sync"
 
+	"os"
+
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 )
 
@@ -21,7 +23,6 @@ const (
 	nexposeAssets  = "/assets"
 	pageQueryParam = "page" // The index of the page (zero-based) to retrieve.
 	sizeQueryParam = "size" // The number of records per page to retrieve.
-
 )
 
 // SiteAssetsResponse is the structure of the Nexpose site assets response
@@ -48,8 +49,6 @@ type Page struct {
 
 // NexposeAssetFetcher is used to create a new
 type NexposeAssetFetcher struct {
-	// The Nexpose HTTP Cient
-	HTTPClient *http.Client
 	// The Nexpose host that points to your instance
 	Host string
 	// The number of assets that should be returned at one time
@@ -74,7 +73,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 			return
 		}
 
-		res, err := c.HTTPClient.Do(req.WithContext(ctx))
+		res, err := http.DefaultClient.Do(req.WithContext(ctx))
 		if err != nil {
 			errChan <- &NexposeHTTPRequestError{err, req.URL.String()}
 			return
@@ -119,7 +118,7 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 		errChan <- err
 		return
 	}
-	res, err := c.HTTPClient.Do(req.WithContext(ctx))
+	res, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
 		errChan <- &NexposeHTTPRequestError{err, req.URL.String()}
 		return
@@ -151,5 +150,9 @@ func newNexposeSiteAssetsRequest(host string, siteID string, page int, size int)
 	q.Set(pageQueryParam, fmt.Sprint(page))
 	q.Set(sizeQueryParam, fmt.Sprint(size))
 	u.RawQuery = q.Encode()
-	return http.NewRequest(http.MethodGet, u.String(), http.NoBody)
+	req, _ := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
+	// the only time http.NewRequest returns an error is if there's a parsing error,
+	// which we already checked for earlier, so no need to check it again
+	req.SetBasicAuth(os.Getenv("NEXPOSE_USERNAME"), os.Getenv("NEXPOSE_PASSWORD"))
+	return req, nil
 }
