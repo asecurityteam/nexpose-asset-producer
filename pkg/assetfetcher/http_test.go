@@ -229,103 +229,11 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 			break
 		}
 	}
-	expectedAssets := []domain.Asset{expectedAsset1, expectedAsset2, expectedAsset3, expectedAsset4, expectedAsset5}
-	assert.Equal(t, expectedAssets, assets)
-}
-
-
-func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledAndOneError(t *testing.T) {
-	expectedAsset1 := domain.Asset{
-		IP: "127.0.0.1",
-		ID: 123,
-	}
-	expectedAsset2 := domain.Asset{
-		IP: "127.0.0.2",
-		ID: 234,
-	}
-	expectedAsset3 := domain.Asset{
-		IP: "~!@#$%^&*()_+}{{{{:::::?>>.><~,",
-		ID: 345,
-	}
-	expectedAsset4 := domain.Asset{
-		IP: "127.0.0.4",
-		ID: 456,
-	}
-	expectedAsset5 := domain.Asset{
-		IP: "127.0.0.5",
-		ID: 567,
-	}
-	page := Page{
-		TotalPages:     3,
-		TotalResources: 5,
-	}
-	page1Resp := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset1, expectedAsset2},
-		Page:      page,
-	}
-	page2Resp := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset3, expectedAsset4},
-		Page:      page,
-	}
-	page3Resp := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset5},
-		Page:      page,
-	}
-	respJSON1, _ := json.Marshal(page1Resp)
-	respJSON2, _ := json.Marshal(page2Resp)
-	respJSON3, _ := json.Marshal(page3Resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pageParam := r.URL.Query().Get("page")
-		switch pageParam {
-		case "0":
-			_, err := w.Write(respJSON1)
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		case "1":
-			_, err := w.Write(respJSON2)
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		case "2":
-			_, err := w.Write(respJSON3)
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		}
-	}))
-	defer ts.Close()
-
-	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 2, // with a page size of 2: 2 assets will be returned for pages 1 and 2, and 1 will be returned on page 3
-	}
-
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
-
-	var assets []domain.Asset
-	for {
-		select {
-		case respAsset, ok := <-assetChan:
-			if !ok {
-				assetChan = nil
-			} else {
-				assets = append(assets, respAsset)
-			}
-		case err, ok := <-errChan:
-			if !ok {
-				errChan = nil
-			} else {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		}
-
-		if assetChan == nil && errChan == nil {
-			break
-		}
-	}
-	expectedAssets := []domain.Asset{expectedAsset1, expectedAsset2, expectedAsset3, expectedAsset4, expectedAsset5}
-	assert.Equal(t, expectedAssets, assets)
+	assert.Contains(t, assets, expectedAsset1)
+	assert.Contains(t, assets, expectedAsset2)
+	assert.Contains(t, assets, expectedAsset3)
+	assert.Contains(t, assets, expectedAsset4)
+	assert.Contains(t, assets, expectedAsset5)
 }
 
 func TestFetchAssetsSuccessNoResponse(t *testing.T) {
