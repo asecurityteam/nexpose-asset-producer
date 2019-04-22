@@ -7,10 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"sync"
-
-	"os"
 
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 )
@@ -58,57 +57,64 @@ type NexposeAssetFetcher struct {
 // FetchAssets gets all the assets for a given site ID from Nexpose, with pagination.
 // It returns a channel of assets and a channel of errors that can by asynchronously listened to.
 func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan domain.Asset, <-chan error) {
-	errChan := make(chan error)
-	assetChan := make(chan domain.Asset)
-	go func() {
-		var wg sync.WaitGroup
-		defer close(assetChan)
-		defer close(errChan)
-		// make the first call to Nexpose to get the total number of pages we'll
-		// have to page through to get all the assets, start with page 0
-		var currentPage = 0
-		req, err := newNexposeSiteAssetsRequest(c.Host, siteID, currentPage, c.PageSize)
-		if err != nil {
-			errChan <- err
-			return
-		}
+	errChan := make(chan error, 1)
+	assetChan := make(chan domain.Asset, 1)
+	defer close(errChan)
+	defer close(assetChan)
 
-		res, err := http.DefaultClient.Do(req.WithContext(ctx))
-		if err != nil {
-			errChan <- &NexposeHTTPRequestError{err, req.URL.String()}
-			return
-		}
-		defer res.Body.Close()
-		respBody, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			errChan <- &ErrorReadingNexposeResponse{err, req.URL.String()}
-			return
-		}
+	// have to page through to get all the assets, start with page 0
+	// make the first call to Nexpose to get the total number of pages we'll
+	var currentPage = 0
+	req, err := newNexposeSiteAssetsRequest(c.Host, siteID, currentPage, c.PageSize)
+	if err != nil {
+		errChan <- err
+		return assetChan, errChan
+	}
 
-		var siteAssetResp SiteAssetsResponse
-		if err := json.Unmarshal(respBody, &siteAssetResp); err != nil {
-			errChan <- &ErrorParsingJSONResponse{err, req.URL.String()}
-			return
-		}
+	res, err := http.DefaultClient.Do(req.WithContext(ctx))
+	if err != nil {
+		errChan <- &NexposeHTTPRequestError{err, req.URL.String()}
+		return assetChan, errChan
+	}
+	defer res.Body.Close()
+	respBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		errChan <- &ErrorReadingNexposeResponse{err, req.URL.String()}
+		return assetChan, errChan
+	}
 
-		for _, asset := range siteAssetResp.Resources {
-			assetChan <- asset
-		}
+	var siteAssetResp SiteAssetsResponse
+	if err := json.Unmarshal(respBody, &siteAssetResp); err != nil {
+		errChan <- &ErrorParsingJSONResponse{err, req.URL.String()}
+		return assetChan, errChan
+	}
 
-		// We've gotten the first page (page 0) and added the assets to the channel,
-		// so here we'll increment the currentPage to start on page 1 and use TotalPages, which is
-		// the total number of pages of assets that Nexpose has, to paginate through to get all the assets
+	pagedAssetChan := make(chan domain.Asset, siteAssetResp.Page.TotalResources)
+	pagedErrChan := make(chan error, siteAssetResp.Page.TotalResources)
+
+	for _, asset := range siteAssetResp.Resources {
+		pagedAssetChan <- asset
+	}
+
+	// We've gotten the first page (page 0) and added the assets to the channel,
+	// so here we'll increment the currentPage to start on page 1 and use TotalPages, which is
+	// the total number of pages of assets that Nexpose has, to paginate through to get all the assets
+	currentPage++
+	totalPages := siteAssetResp.Page.TotalPages
+	var wg sync.WaitGroup
+	for currentPage < totalPages {
+		wg.Add(1)
+		go c.makeRequest(ctx, &wg, siteID, currentPage, pagedAssetChan, pagedErrChan)
 		currentPage++
-		totalPages := siteAssetResp.Page.TotalPages
-		for currentPage < totalPages {
-			wg.Add(1)
-			go c.makeRequest(ctx, &wg, siteID, currentPage, assetChan, errChan)
-			currentPage++
-		}
+	}
+
+	go func() {
+		defer close(pagedErrChan)
+		defer close(pagedAssetChan)
 		wg.Wait()
 	}()
 
-	return assetChan, errChan
+	return pagedAssetChan, pagedErrChan
 }
 
 func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan domain.Asset, errChan chan error) {
