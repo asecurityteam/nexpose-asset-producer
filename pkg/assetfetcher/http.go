@@ -95,15 +95,13 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	}
 
 	// We've gotten the first page (page 0) and added the assets to the channel,
-	// so here we'll increment the currentPage to start on page 1 and use TotalPages, which is
-	// the total number of pages of assets that Nexpose has, to paginate through to get all the assets
-	currentPage++
+	// so here we'll get the TotalPages of assets that Nexpose has, then paginate
+	// through from page 1 to TotalPages to get all the assets
 	totalPages := siteAssetResp.Page.TotalPages
 	var wg sync.WaitGroup
-	for currentPage < totalPages {
+	for currentPage := 1; currentPage < totalPages; currentPage++ {
 		wg.Add(1)
 		go c.makeRequest(ctx, &wg, siteID, currentPage, pagedAssetChan, pagedErrChan)
-		currentPage++
 	}
 
 	go func() {
