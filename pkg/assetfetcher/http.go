@@ -58,9 +58,7 @@ type NexposeAssetFetcher struct {
 // It returns a channel of assets and a channel of errors that can by asynchronously listened to.
 func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan domain.Asset, <-chan error) {
 	errChan := make(chan error, 1)
-	assetChan := make(chan domain.Asset, 1)
 	defer close(errChan)
-	defer close(assetChan)
 
 	// have to page through to get all the assets, start with page 0
 	// make the first call to Nexpose to get the total number of pages we'll
@@ -68,25 +66,25 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	req, err := newNexposeSiteAssetsRequest(c.Host, siteID, currentPage, c.PageSize)
 	if err != nil {
 		errChan <- err
-		return assetChan, errChan
+		return nil, errChan
 	}
 
 	res, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
 		errChan <- &NexposeHTTPRequestError{err, req.URL.String()}
-		return assetChan, errChan
+		return nil, errChan
 	}
 	defer res.Body.Close()
 	respBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		errChan <- &ErrorReadingNexposeResponse{err, req.URL.String()}
-		return assetChan, errChan
+		return nil, errChan
 	}
 
 	var siteAssetResp SiteAssetsResponse
 	if err := json.Unmarshal(respBody, &siteAssetResp); err != nil {
 		errChan <- &ErrorParsingJSONResponse{err, req.URL.String()}
-		return assetChan, errChan
+		return nil, errChan
 	}
 
 	pagedAssetChan := make(chan domain.Asset, siteAssetResp.Page.TotalResources)
