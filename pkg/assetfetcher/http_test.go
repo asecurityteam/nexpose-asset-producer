@@ -35,8 +35,9 @@ func TestFetchAssetsSuccess(t *testing.T) {
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -109,8 +110,9 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 1,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   1,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -202,8 +204,9 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 2, // with a page size of 2: 2 assets will be returned for pages 1 and 2, and 1 will be returned on page 3
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   2, // with a page size of 2: 2 assets will be returned for pages 1 and 2, and 1 will be returned on page 3
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -288,8 +291,9 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T)
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 2,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   2,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -329,7 +333,8 @@ func TestFetchAssetsSuccessNoResponse(t *testing.T) {
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host: ts.URL,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
 	}
 
 	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -356,7 +361,8 @@ func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host: ts.URL,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -372,8 +378,9 @@ func TestFetchAssetsBadResponseError(t *testing.T) {
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -412,8 +419,9 @@ func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -462,8 +470,9 @@ func TestFetchAssetsHTTPError(t *testing.T) {
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host:     "fail://",
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       "fail://",
+		PageSize:   100,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -512,8 +521,9 @@ func TestFetchAssetsWithInvalidHost(t *testing.T) {
 	defer ts.Close()
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		Host:     "~!@#$%^&*()_+:?><!@#$%^&*())_:",
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       "~!@#$%^&*()_+:?><!@#$%^&*())_:",
+		PageSize:   100,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -563,8 +573,9 @@ func TestMakeRequestSuccess(t *testing.T) {
 	defer ts.Close()
 
 	assetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	var wg sync.WaitGroup
@@ -585,8 +596,9 @@ func TestMakeRequestWithBadResponse(t *testing.T) {
 	}))
 	defer ts.Close()
 	assetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	var wg sync.WaitGroup
@@ -618,8 +630,9 @@ func TestMakeRequestWithInvalidHost(t *testing.T) {
 	}))
 	defer ts.Close()
 	assetFetcher := &NexposeAssetFetcher{
-		Host:     "~!@#$%^&*()_+:?><!@#$%^&*())_:",
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       "~!@#$%^&*()_+:?><!@#$%^&*())_:",
+		PageSize:   100,
 	}
 
 	var wg sync.WaitGroup
@@ -651,8 +664,9 @@ func TestMakeRequestHTTPError(t *testing.T) {
 	}))
 	defer ts.Close()
 	assetFetcher := &NexposeAssetFetcher{
-		Host:     "http://fail",
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       "http://fail",
+		PageSize:   100,
 	}
 
 	var wg sync.WaitGroup
@@ -686,8 +700,9 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	}))
 	defer ts.Close()
 	assetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	var wg sync.WaitGroup
@@ -709,8 +724,9 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	defer ts.Close()
 	assetFetcher := &NexposeAssetFetcher{
-		Host:     ts.URL,
-		PageSize: 100,
+		HTTPClient: ts.Client(),
+		Host:       ts.URL,
+		PageSize:   100,
 	}
 
 	var wg sync.WaitGroup

@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 
+	"net/http"
+
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetfetcher"
 	nexposevulnnotiifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
 	"github.com/asecurityteam/runhttp"
@@ -21,8 +23,9 @@ func main() {
 
 	notifier := &nexposevulnnotiifier.NexposeVulnNotificationHandler{
 		AssetFetcher: &assetfetcher.NexposeAssetFetcher{
-			Host:     os.Getenv("NEXPOSE_HOST"),
-			PageSize: pageSize,
+			HTTPClient: http.DefaultClient,
+			Host:       os.Getenv("NEXPOSE_HOST"),
+			PageSize:   pageSize,
 		},
 		LogFn:  runhttp.LoggerFromContext,
 		StatFn: runhttp.StatFromContext,

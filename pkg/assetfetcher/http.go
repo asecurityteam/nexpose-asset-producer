@@ -48,6 +48,8 @@ type Page struct {
 
 // NexposeAssetFetcher is used to create a new
 type NexposeAssetFetcher struct {
+	// The Nexpose HTTP Cient
+	HTTPClient *http.Client
 	// The Nexpose host that points to your instance
 	Host string
 	// The number of assets that should be returned at one time
@@ -69,7 +71,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 		return nil, errChan
 	}
 
-	res, err := http.DefaultClient.Do(req.WithContext(ctx))
+	res, err := c.HTTPClient.Do(req.WithContext(ctx))
 	if err != nil {
 		errChan <- &NexposeHTTPRequestError{err, req.URL.String()}
 		return nil, errChan
@@ -120,7 +122,7 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 		errChan <- err
 		return
 	}
-	res, err := http.DefaultClient.Do(req.WithContext(ctx))
+	res, err := c.HTTPClient.Do(req.WithContext(ctx))
 	if err != nil {
 		errChan <- &NexposeHTTPRequestError{err, req.URL.String()}
 		return
