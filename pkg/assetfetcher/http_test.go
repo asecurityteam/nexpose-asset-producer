@@ -229,11 +229,99 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 			break
 		}
 	}
+	assert.Len(t, assets, 5)
 	assert.Contains(t, assets, expectedAsset1)
 	assert.Contains(t, assets, expectedAsset2)
 	assert.Contains(t, assets, expectedAsset3)
 	assert.Contains(t, assets, expectedAsset4)
 	assert.Contains(t, assets, expectedAsset5)
+}
+
+func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T) {
+	expectedAsset1 := domain.Asset{
+		IP: "127.0.0.1",
+		ID: 123,
+	}
+	expectedAsset2 := domain.Asset{
+		IP: "127.0.0.2",
+		ID: 234,
+	}
+
+	expectedAsset3 := domain.Asset{
+		IP: "127.0.0.3",
+		ID: 345,
+	}
+	page := Page{
+		TotalPages:     3,
+		TotalResources: 5,
+	}
+	page1Resp := SiteAssetsResponse{
+		Resources: []domain.Asset{expectedAsset1, expectedAsset2},
+		Page:      page,
+	}
+	page3Resp := SiteAssetsResponse{
+		Resources: []domain.Asset{expectedAsset3},
+		Page:      page,
+	}
+	respJSON1, _ := json.Marshal(page1Resp)
+	respJSON3, _ := json.Marshal(page3Resp)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pageParam := r.URL.Query().Get("page")
+		switch pageParam {
+		case "0":
+			_, err := w.Write(respJSON1)
+			if err != nil {
+				t.Fatalf("Unexpected error occurred %v ", err)
+			}
+		case "1":
+			_, err := w.Write([]byte("fail")) // the response form this call will
+			if err != nil {
+				t.Fatalf("Unexpected error occurred %v ", err)
+			}
+		case "2":
+			_, err := w.Write(respJSON3)
+			if err != nil {
+				t.Fatalf("Unexpected error occurred %v ", err)
+			}
+		}
+	}))
+	defer ts.Close()
+
+	nexposeAssetFetcher := &NexposeAssetFetcher{
+		Host:     ts.URL,
+		PageSize: 2,
+	}
+
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+
+	var assets []domain.Asset
+	var retErrors []error
+	for {
+		select {
+		case asset, ok := <-assetChan:
+			if !ok {
+				assetChan = nil
+			} else {
+				assets = append(assets, asset)
+			}
+		case err, ok := <-errChan:
+			if !ok {
+				errChan = nil
+			} else {
+				retErrors = append(retErrors, err)
+			}
+		}
+
+		if assetChan == nil && errChan == nil {
+			break
+		}
+	}
+	assert.Len(t, assets, 3)
+	assert.Contains(t, assets, expectedAsset1)
+	assert.Contains(t, assets, expectedAsset2)
+	assert.Contains(t, assets, expectedAsset3)
+	assert.Len(t, retErrors, 1)
+	assert.IsType(t, &ErrorParsingJSONResponse{}, retErrors[0])
 }
 
 func TestFetchAssetsSuccessNoResponse(t *testing.T) {
