@@ -1,18 +1,25 @@
 package assetfetcher
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"sync"
 	"testing"
-
+	
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestFetchAssetsSuccess(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
 	expectedAsset := domain.Asset{
 		IP: "127.0.0.1",
 		ID: 123456,
@@ -23,20 +30,17 @@ func TestFetchAssetsSuccess(t *testing.T) {
 			TotalPages:     1,
 			TotalResources: 1,
 		},
-		Links: domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(respJSON)
-		if err != nil {
-			t.Fatalf("Unexpected error occurred %v ", err)
-		}
-	}))
-	defer ts.Close()
+	respReader := bytes.NewReader(respJSON)
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(respReader),
+		StatusCode: http.StatusOK,
+	}, nil)
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://nexpose-test.com",
 		PageSize:   100,
 	}
 
@@ -66,6 +70,10 @@ func TestFetchAssetsSuccess(t *testing.T) {
 }
 
 func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
 	expectedAsset1 := domain.Asset{
 		IP: "127.0.0.1",
 		ID: 123,
@@ -74,44 +82,33 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 		IP: "127.0.0.2",
 		ID: 456,
 	}
+	page := Page{
+		TotalPages:     2,
+		TotalResources: 2,
+	}
 	resp1 := SiteAssetsResponse{
 		Resources: []domain.Asset{expectedAsset1},
-		Page: Page{
-			TotalPages:     2,
-			TotalResources: 2,
-		},
-		Links: domain.Link{},
+		Page:      page,
 	}
 	resp2 := SiteAssetsResponse{
 		Resources: []domain.Asset{expectedAsset2},
-		Page: Page{
-			TotalPages:     2,
-			TotalResources: 2,
-		},
-		Links: domain.Link{},
+		Page:      page,
 	}
 	respJSON1, _ := json.Marshal(resp1)
 	respJSON2, _ := json.Marshal(resp2)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		page := r.URL.Query().Get("page")
-		if page == "0" {
-			_, err := w.Write(respJSON1)
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		}
-		if page == "1" {
-			_, err := w.Write(respJSON2)
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		}
-	}))
-	defer ts.Close()
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON1)),
+		StatusCode: http.StatusOK,
+	}, nil)
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON2)),
+		StatusCode: http.StatusOK,
+	}, nil)
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://nexpose-test.com",
 		PageSize:   1,
 	}
 
@@ -142,26 +139,15 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 }
 
 func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
-	expectedAsset1 := domain.Asset{
-		IP: "127.0.0.1",
-		ID: 123,
-	}
-	expectedAsset2 := domain.Asset{
-		IP: "127.0.0.2",
-		ID: 234,
-	}
-	expectedAsset3 := domain.Asset{
-		IP: "127.0.0.3",
-		ID: 345,
-	}
-	expectedAsset4 := domain.Asset{
-		IP: "127.0.0.4",
-		ID: 456,
-	}
-	expectedAsset5 := domain.Asset{
-		IP: "127.0.0.5",
-		ID: 567,
-	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
+	expectedAsset1 := domain.Asset{ID: 1}
+	expectedAsset2 := domain.Asset{ID: 2}
+	expectedAsset3 := domain.Asset{ID: 3}
+	expectedAsset4 := domain.Asset{ID: 4}
+	expectedAsset5 := domain.Asset{ID: 5}
 	page := Page{
 		TotalPages:     3,
 		TotalResources: 5,
@@ -181,31 +167,23 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 	respJSON1, _ := json.Marshal(page1Resp)
 	respJSON2, _ := json.Marshal(page2Resp)
 	respJSON3, _ := json.Marshal(page3Resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pageParam := r.URL.Query().Get("page")
-		switch pageParam {
-		case "0":
-			_, err := w.Write(respJSON1)
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		case "1":
-			_, err := w.Write(respJSON2)
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		case "2":
-			_, err := w.Write(respJSON3)
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		}
-	}))
-	defer ts.Close()
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON1)),
+		StatusCode: http.StatusOK,
+	}, nil)
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON2)),
+		StatusCode: http.StatusOK,
+	}, nil)
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON3)),
+		StatusCode: http.StatusOK,
+	}, nil)
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://nexpose-test.com",
 		PageSize:   2, // with a page size of 2: 2 assets will be returned for pages 1 and 2, and 1 will be returned on page 3
 	}
 
@@ -241,19 +219,13 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 }
 
 func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T) {
-	expectedAsset1 := domain.Asset{
-		IP: "127.0.0.1",
-		ID: 123,
-	}
-	expectedAsset2 := domain.Asset{
-		IP: "127.0.0.2",
-		ID: 234,
-	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
 
-	expectedAsset3 := domain.Asset{
-		IP: "127.0.0.3",
-		ID: 345,
-	}
+	expectedAsset1 := domain.Asset{ID: 1}
+	expectedAsset2 := domain.Asset{ID: 2}
+	expectedAsset3 := domain.Asset{ID: 3}
 	page := Page{
 		TotalPages:     3,
 		TotalResources: 5,
@@ -268,31 +240,22 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T)
 	}
 	respJSON1, _ := json.Marshal(page1Resp)
 	respJSON3, _ := json.Marshal(page3Resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pageParam := r.URL.Query().Get("page")
-		switch pageParam {
-		case "0":
-			_, err := w.Write(respJSON1)
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		case "1":
-			_, err := w.Write([]byte("fail")) // the response form this call will
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		case "2":
-			_, err := w.Write(respJSON3)
-			if err != nil {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		}
-	}))
-	defer ts.Close()
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON1)),
+		StatusCode: http.StatusOK,
+	}, nil)
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
+		StatusCode: http.StatusOK,
+	}, nil)
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON3)),
+		StatusCode: http.StatusOK,
+	}, nil)
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://nexpose-test.com",
 		PageSize:   2,
 	}
 
@@ -328,13 +291,18 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T)
 	assert.IsType(t, &ErrorParsingJSONResponse{}, retErrors[0])
 }
 
-func TestFetchAssetsSuccessNoResponse(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer ts.Close()
+func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body: ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
+	}, nil)
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://nexpose-test.com",
 	}
 
 	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -343,6 +311,10 @@ func TestFetchAssetsSuccessNoResponse(t *testing.T) {
 }
 
 func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
 	resp := SiteAssetsResponse{
 		Resources: []domain.Asset{},
 		Page: Page{
@@ -352,102 +324,21 @@ func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 		Links: domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(respJSON)
-		if err != nil {
-			t.Fatalf("Unexpected error occurred %v ", err)
-		}
-	}))
-	defer ts.Close()
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
+		StatusCode: http.StatusOK,
+	}, nil)
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://nexpose-test.com",
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
 
 	assert.Equal(t, domain.Asset{}, <-assetChan) // An empty asset will be added to assetChan if there's a response with no asset
 	assert.Nil(t, <-errChan)
-}
-
-func TestFetchAssetsBadResponseError(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Length", "1")
-	}))
-	defer ts.Close()
-
-	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
-		PageSize:   100,
-	}
-
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
-
-	var actualError error
-
-	for {
-		select {
-		case respAsset, ok := <-assetChan:
-			if !ok {
-				assetChan = nil
-			} else {
-				t.Fatalf("Unexpected error occurred %v ", respAsset)
-			}
-		case err, ok := <-errChan:
-			if !ok {
-				errChan = nil
-			} else {
-				actualError = err
-			}
-		}
-		if assetChan == nil && errChan == nil {
-			break
-		}
-	}
-	assert.IsType(t, &ErrorReadingNexposeResponse{}, actualError)
-}
-
-func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte("fail"))
-		if err != nil {
-			t.Fatalf("Unexpected error occurred %v ", err)
-		}
-	}))
-	defer ts.Close()
-
-	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
-		PageSize:   100,
-	}
-
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
-
-	var actualError error
-
-	for {
-		select {
-		case respAsset, ok := <-assetChan:
-			if !ok {
-				assetChan = nil
-			} else {
-				t.Fatalf("Unexpected error occurred %v ", respAsset)
-			}
-		case err, ok := <-errChan:
-			if !ok {
-				errChan = nil
-			} else {
-				actualError = err
-			}
-		}
-		if assetChan == nil && errChan == nil {
-			break
-		}
-	}
-	assert.IsType(t, &ErrorParsingJSONResponse{}, actualError)
 }
 
 func TestFetchAssetsHTTPError(t *testing.T) {
@@ -502,6 +393,9 @@ func TestFetchAssetsHTTPError(t *testing.T) {
 }
 
 func TestFetchAssetsWithInvalidHost(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
 	asset := domain.Asset{
 		IP: "127.0.0.1",
 		ID: 123456,
@@ -512,16 +406,13 @@ func TestFetchAssetsWithInvalidHost(t *testing.T) {
 		Links:     domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(respJSON)
-		if err != nil {
-			t.Fatalf("Unexpected error occurred %v ", err)
-		}
-	}))
-	defer ts.Close()
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
+		StatusCode: http.StatusOK,
+	}, nil).Times(0)
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
+		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       "~!@#$%^&*()_+:?><!@#$%^&*())_:",
 		PageSize:   100,
 	}
@@ -553,6 +444,10 @@ func TestFetchAssetsWithInvalidHost(t *testing.T) {
 }
 
 func TestMakeRequestSuccess(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
 	asset := domain.Asset{
 		IP: "127.0.0.1",
 		ID: 123456,
@@ -564,17 +459,14 @@ func TestMakeRequestSuccess(t *testing.T) {
 	}
 
 	respJSON, _ := json.Marshal(resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(respJSON)
-		if err != nil {
-			t.Fatalf("Unexpected error occurred %v ", err)
-		}
-	}))
-	defer ts.Close()
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
+		StatusCode: http.StatusOK,
+	}, nil)
 
 	assetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://nexpse-test.com",
 		PageSize:   100,
 	}
 
@@ -616,21 +508,22 @@ func TestMakeRequestWithBadResponse(t *testing.T) {
 }
 
 func TestMakeRequestWithInvalidHost(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
 	resp := SiteAssetsResponse{
 		Resources: []domain.Asset{},
 		Page:      Page{},
 		Links:     domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(respJSON)
-		if err != nil {
-			t.Fatalf("Unexpected error occurred %v ", err)
-		}
-	}))
-	defer ts.Close()
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
+		StatusCode: http.StatusOK,
+	}, nil).Times(0)
+
 	assetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
+		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       "~!@#$%^&*()_+:?><!@#$%^&*())_:",
 		PageSize:   100,
 	}
@@ -686,22 +579,22 @@ func TestMakeRequestHTTPError(t *testing.T) {
 }
 
 func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
 	resp := SiteAssetsResponse{
 		Resources: []domain.Asset{},
 		Page:      Page{},
 		Links:     domain.Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(respJSON)
-		if err != nil {
-			t.Fatalf("Unexpected error occurred %v ", err)
-		}
-	}))
-	defer ts.Close()
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
+		StatusCode: http.StatusOK,
+	}, nil)
 	assetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://nexpose-test.com",
 		PageSize:   100,
 	}
 
@@ -721,12 +614,17 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 }
 
 func TestMakeRequestWithNoResponse(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	defer ts.Close()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body: ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
+	}, nil)
+
 	assetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
-		PageSize:   100,
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://nexpose-test.com",
 	}
 
 	var wg sync.WaitGroup
