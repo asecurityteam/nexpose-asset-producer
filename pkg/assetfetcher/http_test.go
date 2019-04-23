@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"sync"
 	"testing"
-	
+
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

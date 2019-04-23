@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"strconv"
-
-	"net/http"
 
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetfetcher"
 	nexposevulnnotiifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
