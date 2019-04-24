@@ -5,11 +5,11 @@ x-runtime:
   logger:
     level: "INFO"
     output: "STDOUT"
-#  stats:
-#    output: "DATADOG"
-#    datadog:
-#      address: "statsd:8126"
-#      flushinterval: "10s"
+  stats:
+    output: "DATADOG"
+    datadog:
+      address: "statsd:8126"
+      flushinterval: "10s"
   signals:
     installed:
       - "OS"
@@ -54,42 +54,58 @@ paths:
           description: "Success."
       x-transportd:
         backend: app
-  /{name}:
-    get:
-      description: An API Call.
-      parameters:
-        - name: "name"
-          in: "path"
-          description: "Name of person to greet."
+  /notification:
+      post:
+        description: Get scanned assets and vulnerabilities from last scan for given site and publish them onto an event stream.
+        requestBody:
           required: true
-          schema:
-            type: "string"
-      responses:
-        "200":
-          description: "Success"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Greeting'
-      x-transportd:
-        backend: app
-        enabled:
-#          - "metrics"
-          - "accesslog"
-          - "requestvalidation"
-          - "responsevalidation"
-          - "lambda"
-        lambda:
-          arn: "name_or_arn"
-          async: false
-          request: '{}'
-          success: '{"status": 200, "bodyPassthrough": true}'
-          error: '{"status": 500, "bodyPassthrough": true}'
+                $ref: '#/components/schemas/ScanNotification'
+        responses:
+          "202":
+            description: "Accepted"
+          "400":
+            description: "Invalid input"
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+        x-transportd:
+          backend: app
+          enabled:
+            - "metrics"
+            - "accesslog"
+            - "requestvalidation"
+            - "lambda"
+          lambda:
+            arn: "notification"
+            async: true
+            request: '#! json .Request.Body !#'
+            success: '{"status": 202, "bodyPassthrough": true}'
+            error: '{"status": 500, "bodyPassthrough": true}'
 components:
   schemas:
-    Greeting:
+    ScanNotification:
+      type: object
+      required:
+        - site_id
+      properties:
+        scan_id:
+          type: string
+          description: The Nexpose scan ID for the completed scan.
+        site_id:
+          type: string
+          description: The Nexpose site ID for the site that just got scanned.
+    Error:
       type: object
       properties:
-        greeting:
+        errorMessage:
           type: string
-          description: The personal greeting.
+        errorType:
+          type: string
+        stackTrace:
+          type: array
+          items:
+            type: string
