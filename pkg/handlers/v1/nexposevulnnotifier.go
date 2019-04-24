@@ -7,10 +7,8 @@ import (
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/logs"
 )
 
-// ScanInfo represents the incoming payload
+// ScanInfo represents the fields we want from the incoming payload
 type ScanInfo struct {
-	// ScanID is the ID of the completed scan whose vulnerabilities we'll process
-	ScanID string `json:"scan_id"`
 	// SiteID is the ID of the site that just got scanned
 	SiteID string `json:"site_id"`
 }
