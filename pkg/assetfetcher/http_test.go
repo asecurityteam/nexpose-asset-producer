@@ -12,6 +12,7 @@ import (
 
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 	"github.com/golang/mock/gomock"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,7 +41,7 @@ func TestFetchAssetsSuccess(t *testing.T) {
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       "http://nexpose-test.com",
+		Host:       "http://localhost",
 		PageSize:   100,
 	}
 
@@ -108,7 +109,7 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       "http://nexpose-test.com",
+		Host:       "http://localhost",
 		PageSize:   1,
 	}
 
@@ -183,7 +184,7 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       "http://nexpose-test.com",
+		Host:       "http://localhost",
 		PageSize:   2, // with a page size of 2: 2 assets will be returned for pages 1 and 2, and 1 will be returned on page 3
 	}
 
@@ -255,7 +256,7 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T)
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       "http://nexpose-test.com",
+		Host:       "http://localhost",
 		PageSize:   2,
 	}
 
@@ -302,7 +303,7 @@ func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       "http://nexpose-test.com",
+		Host:       "http://localhost",
 	}
 
 	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -332,7 +333,7 @@ func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       "http://nexpose-test.com",
+		Host:       "http://localhost",
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -342,27 +343,15 @@ func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 }
 
 func TestFetchAssetsHTTPError(t *testing.T) {
-	expectedAsset := domain.Asset{
-		IP: "127.0.0.1",
-		ID: 123456,
-	}
-	resp := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset},
-		Page:      Page{},
-		Links:     domain.Link{},
-	}
-	respJSON, _ := json.Marshal(resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(respJSON)
-		if err != nil {
-			t.Fatalf("Unexpected error occurred %v ", err)
-		}
-	}))
-	defer ts.Close()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(nil, errors.New("HTTPError"))
 
 	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       "fail://",
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://localhost",
 		PageSize:   100,
 	}
 
@@ -466,7 +455,7 @@ func TestMakeRequestSuccess(t *testing.T) {
 
 	assetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       "http://nexpse-test.com",
+		Host:       "http://localhost",
 		PageSize:   100,
 	}
 
@@ -543,22 +532,15 @@ func TestMakeRequestWithInvalidHost(t *testing.T) {
 }
 
 func TestMakeRequestHTTPError(t *testing.T) {
-	resp := SiteAssetsResponse{
-		Resources: []domain.Asset{},
-		Page:      Page{},
-		Links:     domain.Link{},
-	}
-	respJSON, _ := json.Marshal(resp)
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(respJSON)
-		if err != nil {
-			t.Fatalf("Unexpected error occurred %v ", err)
-		}
-	}))
-	defer ts.Close()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(nil, errors.New("HTTPError"))
+
 	assetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       "http://fail",
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://localhost",
 		PageSize:   100,
 	}
 
@@ -575,7 +557,7 @@ func TestMakeRequestHTTPError(t *testing.T) {
 
 	err := <-errChan
 	assert.IsType(t, &NexposeHTTPRequestError{}, err)
-	assert.Contains(t, err.Error(), "Error making an HTTP request to Nexpose with URL http://fail/api/3/sites/siteID/assets?page=100&size=100:")
+	assert.Contains(t, err.Error(), "Error making an HTTP request to Nexpose with URL http://localhost/api/3/sites/siteID/assets?page=100&size=100:")
 }
 
 func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
@@ -594,7 +576,7 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	}, nil)
 	assetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       "http://nexpose-test.com",
+		Host:       "http://localhost",
 		PageSize:   100,
 	}
 
@@ -624,7 +606,7 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 
 	assetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       "http://nexpose-test.com",
+		Host:       "http://localhost",
 	}
 
 	var wg sync.WaitGroup
