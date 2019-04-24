@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"sync"
 	"testing"
 
@@ -311,6 +310,56 @@ func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
 	assert.IsType(t, &ErrorParsingJSONResponse{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
 }
 
+type errReader struct {
+	Error error
+}
+
+func (r *errReader) Read(_ []byte) (int, error) {
+	return 0, r.Error
+}
+
+func TestFetchAssetsWithErrorReadingResponse(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+	rd := &errReader{Error: errors.New("ioutil.ReadAll error")}
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body: ioutil.NopCloser(rd),
+	}, nil)
+
+	nexposeAssetFetcher := &NexposeAssetFetcher{
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://localhost",
+		PageSize:   100,
+	}
+
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+
+	var actualError error
+
+	for {
+		select {
+		case respAsset, ok := <-assetChan:
+			if !ok {
+				assetChan = nil
+			} else {
+				t.Fatalf("Unexpected error occurred %v ", respAsset)
+			}
+		case err, ok := <-errChan:
+			if !ok {
+				errChan = nil
+			} else {
+				actualError = err
+			}
+		}
+		if assetChan == nil && errChan == nil {
+			break
+		}
+	}
+	assert.IsType(t, &ErrorReadingNexposeResponse{}, actualError)
+}
+
 func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -471,14 +520,20 @@ func TestMakeRequestSuccess(t *testing.T) {
 	assert.NotNil(t, <-assetChan)
 }
 
-func TestMakeRequestWithBadResponse(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Length", "1")
-	}))
-	defer ts.Close()
+func TestMakeRequestWithErrorReadingResponse(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+	rd := &errReader{Error: errors.New("ioutil.ReadAll error")}
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(rd),
+		StatusCode: http.StatusOK,
+	}, nil)
+
 	assetFetcher := &NexposeAssetFetcher{
-		HTTPClient: ts.Client(),
-		Host:       ts.URL,
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://localhost",
 		PageSize:   100,
 	}
 
