@@ -1,7 +1,6 @@
 package assetfetcher
 
 import (
-	"os"
 	"time"
 
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
@@ -21,7 +20,7 @@ type Asset struct {
 	// The databases enumerated on the asset.
 	Databases []Database `json:"databases,omitempty"`
 	// The files discovered with searching on the asset.
-	Files []*os.File `json:"files,omitempty"`
+	Files []File `json:"files,omitempty"`
 	// The history of changes to the asset over time.
 	History assetHistoryEvents `json:"history,omitempty"`
 	// The primary host name (local or FQDN) of the asset.
@@ -84,6 +83,26 @@ type Database struct {
 	ID int32 `json:"id,omitempty"`
 	// The name of the database instance.
 	Name string `json:"name"`
+}
+
+// File discovered with searching on the asset.
+type File struct {
+	// Attributes detected on the file.
+	Attributes []Attribute `json:"attributes,omitempty"`
+	// The name of the file
+	Name string `json:"name,omitempty"`
+	// The size of the regular file (in bytes). If the file is a directory, no value is returned.
+	Size int64 `json:"size,omitempty"`
+	// The type of the file.
+	Type string `json:"type,omitempty"`
+}
+
+// Attribute detected on the file.
+type Attribute struct {
+	// The name of the configuration value.
+	Name string `json:"name"`
+	// The configuration value.
+	Value string `json:"value"`
 }
 
 // AssetHistory represents a change to the asset
