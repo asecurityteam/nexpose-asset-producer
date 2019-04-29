@@ -55,3 +55,15 @@ type ErrorFetchingAssets struct {
 func (e *ErrorFetchingAssets) Error() string {
 	return fmt.Sprintf("Error fetching assets from Nexpose %v", e.Inner)
 }
+
+// ErrorConvertingAssetPayload represents an error we get when trying to convert a Nexpose Asset
+// payload to AssetEvent
+type ErrorConvertingAssetPayload struct {
+	AssetID int64
+	Inner   error
+}
+
+// Error returns an ErrorConvertingAssetPayload
+func (e *ErrorConvertingAssetPayload) Error() string {
+	return fmt.Sprintf("Error converting asset %v payload to event %v", e.AssetID, e.Inner)
+}
