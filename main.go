@@ -8,6 +8,7 @@ import (
 
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetfetcher"
 	nexposevulnnotiifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
+	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/producer"
 	"github.com/asecurityteam/runhttp"
 	"github.com/asecurityteam/serverfull/pkg"
 	serverfulldomain "github.com/asecurityteam/serverfull/pkg/domain"
@@ -21,6 +22,10 @@ func main() {
 	pageSize, _ := strconv.Atoi(os.Getenv("NEXPOSE_SITE_ASSET_PAGE_SIZE"))
 
 	notifier := &nexposevulnnotiifier.NexposeVulnNotificationHandler{
+		Producer: &producer.AssetProducer{
+			HTTPClient: http.DefaultClient,
+			Endpoint:   os.Getenv("STREAMING_APPLIANCE_ENDPOINT"),
+		},
 		AssetFetcher: &assetfetcher.NexposeAssetFetcher{
 			HTTPClient: http.DefaultClient,
 			Host:       os.Getenv("NEXPOSE_HOST"),

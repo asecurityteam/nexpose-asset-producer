@@ -3,6 +3,8 @@ package v1
 import (
 	"context"
 
+	"sync"
+
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/logs"
 )
@@ -15,6 +17,7 @@ type ScanInfo struct {
 
 // NexposeVulnNotificationHandler is a lambda handler that fetches Nexpose Assets and sends them to an event stream
 type NexposeVulnNotificationHandler struct {
+	Producer     domain.Producer
 	AssetFetcher domain.AssetFetcher
 	LogFn        domain.LogFn
 	StatFn       domain.StatFn
@@ -29,16 +32,24 @@ func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo
 
 	assetChan, errChan := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
 
-	// this loop currently logs when it receives an asset or error from their respective channels
-	// The future issues will take these assets and use them to call Nexpose again to get heir vulnerabilities
+	wg := sync.WaitGroup{}
 	for {
 		select {
-		case _, ok := <-assetChan:
+		case asset, ok := <-assetChan:
 			if !ok {
 				assetChan = nil
 			} else {
-				// TODO this is where we'll publish the asset to the queue SECD-442
 				stater.Count("assetreceived.success", 1)
+				wg.Add(1)
+				go func(ctx context.Context, asset domain.AssetEvent) {
+					defer wg.Done()
+					err := h.Producer.Produce(ctx, asset)
+					if err != nil {
+						logger.Error(logs.ProducerFailure{
+							Reason: err.Error(),
+						})
+					}
+				}(ctx, asset)
 			}
 		case err, ok := <-errChan:
 			if !ok {
@@ -54,4 +65,5 @@ func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo
 			break
 		}
 	}
+	wg.Wait()
 }
