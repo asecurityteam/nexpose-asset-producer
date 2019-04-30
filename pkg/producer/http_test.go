@@ -3,14 +3,14 @@ package producer
 import (
 	"bytes"
 	"context"
-	"errors"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +33,7 @@ func TestProduceSuccess(t *testing.T) {
 
 	producer := &AssetProducer{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Endpoint: "http://localhost",
+		Endpoint:   "http://localhost",
 	}
 	err := producer.Produce(context.Background(), asset)
 	assert.Nil(t, err)
@@ -52,7 +52,7 @@ func TestProduceError(t *testing.T) {
 	}
 	producer := &AssetProducer{
 		HTTPClient: &http.Client{Transport: mockRT},
-		Endpoint: "http://localhost",
+		Endpoint:   "http://localhost",
 	}
 	err := producer.Produce(context.Background(), asset)
 	assert.NotNil(t, err)

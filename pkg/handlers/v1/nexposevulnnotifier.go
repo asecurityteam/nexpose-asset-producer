@@ -3,6 +3,8 @@ package v1
 import (
 	"context"
 
+	"sync"
+
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/logs"
 )
@@ -30,6 +32,7 @@ func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo
 
 	assetChan, errChan := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
 
+	wg := sync.WaitGroup{}
 	for {
 		select {
 		case asset, ok := <-assetChan:
@@ -37,7 +40,9 @@ func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo
 				assetChan = nil
 			} else {
 				stater.Count("assetreceived.success", 1)
+				wg.Add(1)
 				go func(ctx context.Context, asset domain.Asset) {
+					defer wg.Done()
 					err := h.Producer.Produce(ctx, asset)
 					if err != nil {
 						logger.Error(logs.ProducerFailure{
@@ -60,4 +65,5 @@ func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo
 			break
 		}
 	}
+	wg.Wait()
 }
