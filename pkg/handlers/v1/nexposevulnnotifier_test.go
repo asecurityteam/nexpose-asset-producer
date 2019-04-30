@@ -17,10 +17,10 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 
 	assetFetcher := NewMockAssetFetcher(mockCtrl)
 
-	assetChan := make(chan domain.Asset)
+	assetChan := make(chan domain.AssetEvent)
 	errChan := make(chan error)
 
-	asset := domain.Asset{
+	asset := domain.AssetEvent{
 		ID: 12345,
 	}
 

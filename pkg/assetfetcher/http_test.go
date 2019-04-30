@@ -20,12 +20,12 @@ func TestFetchAssetsSuccess(t *testing.T) {
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 
-	expectedAsset := domain.Asset{
+	expectedAsset := domain.AssetEvent{
 		IP: "127.0.0.1",
 		ID: 123456,
 	}
 	resp := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset},
+		Resources: []Asset{Asset{IP: "127.0.0.1", ID: 123456}},
 		Page: Page{
 			TotalPages:     1,
 			TotalResources: 1,
@@ -46,7 +46,7 @@ func TestFetchAssetsSuccess(t *testing.T) {
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
 
-	var actualAsset domain.Asset
+	var actualAsset domain.AssetEvent
 	for {
 		select {
 		case respAsset, ok := <-assetChan:
@@ -74,11 +74,11 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 
-	expectedAsset1 := domain.Asset{
+	expectedAsset1 := domain.AssetEvent{
 		IP: "127.0.0.1",
 		ID: 123,
 	}
-	expectedAsset2 := domain.Asset{
+	expectedAsset2 := domain.AssetEvent{
 		IP: "127.0.0.2",
 		ID: 456,
 	}
@@ -87,11 +87,11 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 		TotalResources: 2,
 	}
 	resp1 := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset1},
+		Resources: []Asset{Asset{IP: "127.0.0.1", ID: 123}},
 		Page:      page,
 	}
 	resp2 := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset2},
+		Resources: []Asset{Asset{IP: "127.0.0.2", ID: 456}},
 		Page:      page,
 	}
 	respJSON1, _ := json.Marshal(resp1)
@@ -114,7 +114,7 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
 
-	var assets []domain.Asset
+	var assets []domain.AssetEvent
 	for {
 		select {
 		case respAsset, ok := <-assetChan:
@@ -135,7 +135,7 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 			break
 		}
 	}
-	assert.Equal(t, []domain.Asset{expectedAsset1, expectedAsset2}, assets)
+	assert.Equal(t, []domain.AssetEvent{expectedAsset1, expectedAsset2}, assets)
 }
 
 func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
@@ -143,25 +143,25 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 
-	expectedAsset1 := domain.Asset{ID: 1}
-	expectedAsset2 := domain.Asset{ID: 2}
-	expectedAsset3 := domain.Asset{ID: 3}
-	expectedAsset4 := domain.Asset{ID: 4}
-	expectedAsset5 := domain.Asset{ID: 5}
+	expectedAsset1 := domain.AssetEvent{ID: 1}
+	expectedAsset2 := domain.AssetEvent{ID: 2}
+	expectedAsset3 := domain.AssetEvent{ID: 3}
+	expectedAsset4 := domain.AssetEvent{ID: 4}
+	expectedAsset5 := domain.AssetEvent{ID: 5}
 	page := Page{
 		TotalPages:     3,
 		TotalResources: 5,
 	}
 	page1Resp := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset1, expectedAsset2},
+		Resources: []Asset{Asset{ID: 1}, Asset{ID: 2}},
 		Page:      page,
 	}
 	page2Resp := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset3, expectedAsset4},
+		Resources: []Asset{Asset{ID: 3}, Asset{ID: 4}},
 		Page:      page,
 	}
 	page3Resp := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset5},
+		Resources: []Asset{Asset{ID: 5}},
 		Page:      page,
 	}
 	respJSON1, _ := json.Marshal(page1Resp)
@@ -189,7 +189,7 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
 
-	var assets []domain.Asset
+	var assets []domain.AssetEvent
 	for {
 		select {
 		case respAsset, ok := <-assetChan:
@@ -223,19 +223,19 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 
-	expectedAsset1 := domain.Asset{ID: 1}
-	expectedAsset2 := domain.Asset{ID: 2}
-	expectedAsset3 := domain.Asset{ID: 3}
+	expectedAsset1 := domain.AssetEvent{ID: 1}
+	expectedAsset2 := domain.AssetEvent{ID: 2}
+	expectedAsset3 := domain.AssetEvent{ID: 3}
 	page := Page{
 		TotalPages:     3,
 		TotalResources: 5,
 	}
 	page1Resp := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset1, expectedAsset2},
+		Resources: []Asset{Asset{ID: 1}, Asset{ID: 2}},
 		Page:      page,
 	}
 	page3Resp := SiteAssetsResponse{
-		Resources: []domain.Asset{expectedAsset3},
+		Resources: []Asset{Asset{ID: 3}},
 		Page:      page,
 	}
 	respJSON1, _ := json.Marshal(page1Resp)
@@ -261,7 +261,7 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T)
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
 
-	var assets []domain.Asset
+	var assets []domain.AssetEvent
 	var retErrors []error
 	for {
 		select {
@@ -366,12 +366,12 @@ func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 	mockRT := NewMockRoundTripper(ctrl)
 
 	resp := SiteAssetsResponse{
-		Resources: []domain.Asset{},
+		Resources: []Asset{},
 		Page: Page{
 			TotalPages:     1,
 			TotalResources: 1,
 		},
-		Links: domain.Link{},
+		Links: Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 
@@ -387,7 +387,7 @@ func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
 
-	assert.Equal(t, domain.Asset{}, <-assetChan) // An empty asset will be added to assetChan if there's a response with no asset
+	assert.Equal(t, domain.AssetEvent{}, <-assetChan) // An empty asset will be added to assetChan if there's a response with no asset
 	assert.Nil(t, <-errChan)
 }
 
@@ -430,18 +430,69 @@ func TestFetchAssetsHTTPError(t *testing.T) {
 	assert.IsType(t, &NexposeHTTPRequestError{}, actualError)
 }
 
+func TestFetchAssetsAssetPayloadToAssetEventError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
+	resp := SiteAssetsResponse{
+		Resources: []Asset{Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "not a time"}}}},
+		Page: Page{
+			TotalPages:     1,
+			TotalResources: 1,
+		},
+		Links: Link{},
+	}
+	respJSON, _ := json.Marshal(resp)
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
+		StatusCode: http.StatusOK,
+	}, nil)
+
+	nexposeAssetFetcher := &NexposeAssetFetcher{
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://localhost",
+		PageSize:   1,
+	}
+
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+
+	var actualError error
+
+	for {
+		select {
+		case respAsset, ok := <-assetChan:
+			if !ok {
+				assetChan = nil
+			} else {
+				t.Fatalf("Unexpected error occurred %v ", respAsset)
+			}
+		case err, ok := <-errChan:
+			if !ok {
+				errChan = nil
+			} else {
+				actualError = err
+			}
+		}
+		if assetChan == nil && errChan == nil {
+			break
+		}
+	}
+	assert.IsType(t, &ErrorConvertingAssetPayload{}, actualError)
+}
+
 func TestFetchAssetsWithInvalidHost(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
-	asset := domain.Asset{
+	asset := Asset{
 		IP: "127.0.0.1",
 		ID: 123456,
 	}
 	resp := SiteAssetsResponse{
-		Resources: []domain.Asset{asset},
+		Resources: []Asset{asset},
 		Page:      Page{},
-		Links:     domain.Link{},
+		Links:     Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
@@ -486,14 +537,14 @@ func TestMakeRequestSuccess(t *testing.T) {
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 
-	asset := domain.Asset{
+	asset := Asset{
 		IP: "127.0.0.1",
 		ID: 123456,
 	}
 	resp := SiteAssetsResponse{
-		Resources: []domain.Asset{asset},
+		Resources: []Asset{asset},
 		Page:      Page{},
-		Links:     domain.Link{},
+		Links:     Link{},
 	}
 
 	respJSON, _ := json.Marshal(resp)
@@ -509,7 +560,7 @@ func TestMakeRequestSuccess(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan domain.Asset, 1)
+	assetChan := make(chan domain.AssetEvent, 1)
 	errChan := make(chan error, 1)
 	defer close(assetChan)
 	defer close(errChan)
@@ -538,7 +589,7 @@ func TestMakeRequestWithErrorReadingResponse(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan domain.Asset, 1)
+	assetChan := make(chan domain.AssetEvent, 1)
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
@@ -556,9 +607,9 @@ func TestMakeRequestWithInvalidHost(t *testing.T) {
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 	resp := SiteAssetsResponse{
-		Resources: []domain.Asset{},
+		Resources: []Asset{},
 		Page:      Page{},
-		Links:     domain.Link{},
+		Links:     Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
@@ -573,7 +624,7 @@ func TestMakeRequestWithInvalidHost(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan domain.Asset, 1)
+	assetChan := make(chan domain.AssetEvent, 1)
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
@@ -600,7 +651,7 @@ func TestMakeRequestHTTPError(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan domain.Asset, 1)
+	assetChan := make(chan domain.AssetEvent, 1)
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
@@ -615,14 +666,49 @@ func TestMakeRequestHTTPError(t *testing.T) {
 	assert.Contains(t, err.Error(), "Error making an HTTP request to Nexpose with URL http://localhost/api/3/sites/siteID/assets?page=100&size=100:")
 }
 
+func TestMakeRequestWithAssetPayloadToAssetEventError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+	resp := SiteAssetsResponse{
+		Resources: []Asset{Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "not a time"}}}},
+		Page:      Page{},
+		Links:     Link{},
+	}
+	respJSON, _ := json.Marshal(resp)
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
+		StatusCode: http.StatusOK,
+	}, nil)
+
+	assetFetcher := &NexposeAssetFetcher{
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       "http://localhost",
+		PageSize:   100,
+	}
+
+	var wg sync.WaitGroup
+	assetChan := make(chan domain.AssetEvent, 1)
+	errChan := make(chan error, 1)
+
+	wg.Add(1)
+	assetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+	wg.Wait()
+
+	close(assetChan)
+	close(errChan)
+
+	assert.IsType(t, &ErrorConvertingAssetPayload{}, <-errChan)
+}
+
 func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 	resp := SiteAssetsResponse{
-		Resources: []domain.Asset{},
+		Resources: []Asset{},
 		Page:      Page{},
-		Links:     domain.Link{},
+		Links:     Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
@@ -636,7 +722,7 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan domain.Asset, 1)
+	assetChan := make(chan domain.AssetEvent, 1)
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
@@ -646,7 +732,7 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	close(assetChan)
 	close(errChan)
 
-	assert.Equal(t, domain.Asset{}, <-assetChan) // An empty asset will be added to assetChan if there's a response with no asset
+	assert.Equal(t, domain.AssetEvent{}, <-assetChan) // An empty asset will be added to assetChan if there's a response with no asset
 	assert.Nil(t, <-errChan)
 }
 
@@ -665,7 +751,7 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	assetChan := make(chan domain.Asset, 1)
+	assetChan := make(chan domain.AssetEvent, 1)
 	errChan := make(chan error, 1)
 	defer close(assetChan)
 	defer close(errChan)

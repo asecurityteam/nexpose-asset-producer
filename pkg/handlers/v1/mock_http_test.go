@@ -5,10 +5,11 @@
 package v1
 
 import (
-context "context"
-domain "github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
-gomock "github.com/golang/mock/gomock"
-reflect "reflect"
+	context "context"
+	reflect "reflect"
+
+	domain "github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockAssetFetcher is a mock of AssetFetcher interface
@@ -35,9 +36,9 @@ func (m *MockAssetFetcher) EXPECT() *MockAssetFetcherMockRecorder {
 }
 
 // FetchAssets mocks base method
-func (m *MockAssetFetcher) FetchAssets(arg0 context.Context, arg1 string) (<-chan domain.Asset, <-chan error) {
+func (m *MockAssetFetcher) FetchAssets(arg0 context.Context, arg1 string) (<-chan domain.AssetEvent, <-chan error) {
 	ret := m.ctrl.Call(m, "FetchAssets", arg0, arg1)
-	ret0, _ := ret[0].(<-chan domain.Asset)
+	ret0, _ := ret[0].(<-chan domain.AssetEvent)
 	ret1, _ := ret[1].(<-chan error)
 	return ret0, ret1
 }

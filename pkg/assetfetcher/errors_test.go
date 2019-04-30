@@ -44,6 +44,11 @@ func TestAssetFetcherErrors(t *testing.T) {
 			&ErrorFetchingAssets{customError},
 			fmt.Sprintf("Error fetching assets from Nexpose %v", customError),
 		},
+		{
+			"ErrorConvertingAssetPayload",
+			&ErrorConvertingAssetPayload{123456, customError},
+			fmt.Sprintf("Error converting asset 123456 payload to event %v", customError),
+		},
 	}
 
 	for _, tt := range tc {
@@ -81,6 +86,10 @@ func TestAssetFetcherErrorsCanBeNil(t *testing.T) {
 		{
 			"ErrorFetchingAssets",
 			&ErrorFetchingAssets{},
+		},
+		{
+			"ErrorConvertingAssetPayload",
+			&ErrorConvertingAssetPayload{},
 		},
 	}
 

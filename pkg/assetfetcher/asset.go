@@ -1,7 +1,9 @@
-package domain
+package assetfetcher
 
 import (
-	"os"
+	"time"
+
+	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 )
 
 // Asset represents a Nexpose asset response payload
@@ -18,9 +20,9 @@ type Asset struct {
 	// The databases enumerated on the asset.
 	Databases []Database `json:"databases,omitempty"`
 	// The files discovered with searching on the asset.
-	Files []*os.File `json:"files,omitempty"`
+	Files []File `json:"files,omitempty"`
 	// The history of changes to the asset over time.
-	History []AssetHistory `json:"history,omitempty"`
+	History assetHistoryEvents `json:"history,omitempty"`
 	// The primary host name (local or FQDN) of the asset.
 	HostName string `json:"hostName,omitempty"`
 	// All host names or aliases discovered on the asset.
@@ -81,6 +83,26 @@ type Database struct {
 	ID int32 `json:"id,omitempty"`
 	// The name of the database instance.
 	Name string `json:"name"`
+}
+
+// File discovered with searching on the asset.
+type File struct {
+	// Attributes detected on the file.
+	Attributes []Attribute `json:"attributes,omitempty"`
+	// The name of the file
+	Name string `json:"name,omitempty"`
+	// The size of the regular file (in bytes). If the file is a directory, no value is returned.
+	Size int64 `json:"size,omitempty"`
+	// The type of the file.
+	Type string `json:"type,omitempty"`
+}
+
+// Attribute detected on the file.
+type Attribute struct {
+	// The name of the configuration value.
+	Name string `json:"name"`
+	// The configuration value.
+	Value string `json:"value"`
 }
 
 // AssetHistory represents a change to the asset
@@ -285,4 +307,37 @@ type VulnerabilitySummary struct {
 	Severe int64 `json:"severe,omitempty"`
 	// The total number of vulnerabilities.
 	Total int64 `json:"total,omitempty"`
+}
+
+// AssetPayloadToAssetEvent translates a Nexpose Asset API response payload
+// into an AssetEvent for downstream services
+func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
+	lastScanned, err := a.History.lastScannedTimestamp()
+	if err != nil {
+		return domain.AssetEvent{}, err
+	}
+	return domain.AssetEvent{
+		ID:          a.ID,
+		Hostname:    a.HostName,
+		IP:          a.IP,
+		LastScanned: lastScanned,
+	}, nil
+}
+
+type assetHistoryEvents []AssetHistory
+
+func (a assetHistoryEvents) lastScannedTimestamp() (time.Time, error) {
+	latestTime := time.Time{}
+	for _, evt := range a {
+		if evt.Type == "SCAN" {
+			t, err := time.Parse(time.RFC3339, evt.Date)
+			if err != nil {
+				return latestTime, err
+			}
+			if t.After(latestTime) {
+				latestTime = t
+			}
+		}
+	}
+	return latestTime, nil
 }

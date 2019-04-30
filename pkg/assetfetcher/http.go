@@ -27,11 +27,11 @@ const (
 // SiteAssetsResponse is the structure of the Nexpose site assets response
 type SiteAssetsResponse struct {
 	// Hypermedia links to corresponding or related resources
-	Links domain.Link
+	Links Link
 	// The details of pagination indicating which page was returned, and how the remaining pages can be retrieved.
 	Page Page
 	// The page of resources returned (resources = assets)
-	Resources []domain.Asset
+	Resources []Asset
 }
 
 // Page represents the JSON object Nexpose provides to help paginate through all the Assets
@@ -58,7 +58,7 @@ type NexposeAssetFetcher struct {
 
 // FetchAssets gets all the assets for a given site ID from Nexpose, with pagination.
 // It returns a channel of assets and a channel of errors that can by asynchronously listened to.
-func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan domain.Asset, <-chan error) {
+func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan domain.AssetEvent, <-chan error) {
 	errChan := make(chan error, 1)
 	defer close(errChan)
 
@@ -89,11 +89,16 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 		return nil, errChan
 	}
 
-	pagedAssetChan := make(chan domain.Asset, siteAssetResp.Page.TotalResources)
+	pagedAssetChan := make(chan domain.AssetEvent, siteAssetResp.Page.TotalResources)
 	pagedErrChan := make(chan error, siteAssetResp.Page.TotalResources)
 
 	for _, asset := range siteAssetResp.Resources {
-		pagedAssetChan <- asset
+		assetEvent, err := asset.AssetPayloadToAssetEvent()
+		if err != nil {
+			pagedErrChan <- &ErrorConvertingAssetPayload{asset.ID, err}
+		} else {
+			pagedAssetChan <- assetEvent
+		}
 	}
 
 	// We've gotten the first page (page 0) and added the assets to the channel,
@@ -115,7 +120,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	return pagedAssetChan, pagedErrChan
 }
 
-func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan domain.Asset, errChan chan error) {
+func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan domain.AssetEvent, errChan chan error) {
 	defer wg.Done()
 	req, err := newNexposeSiteAssetsRequest(c.Host, siteID, page, c.PageSize)
 	if err != nil {
@@ -139,7 +144,12 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 		return
 	}
 	for _, asset := range siteAssetResp.Resources {
-		assetChan <- asset
+		assetEvent, err := asset.AssetPayloadToAssetEvent()
+		if err != nil {
+			errChan <- &ErrorConvertingAssetPayload{asset.ID, err}
+		} else {
+			assetChan <- assetEvent
+		}
 	}
 }
 
