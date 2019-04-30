@@ -149,3 +149,38 @@ func TestNexposeVulnNotificationHandlerWithAssetsAndErrors(t *testing.T) {
 	}
 	handler.Handle(ctx, scanInfo)
 }
+
+func TestNexposeVulnNotificationHandlerProducerError(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	assetFetcher := NewMockAssetFetcher(mockCtrl)
+	producer := NewMockProducer(mockCtrl)
+
+	assetChan := make(chan domain.AssetEvent, 1)
+	errChan := make(chan error, 1)
+
+	asset := domain.AssetEvent{
+		ID: 12345,
+	}
+
+	assetChan <- asset
+	close(assetChan)
+	close(errChan)
+
+	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetChan, errChan)
+	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(errors.New("HTTPError"))
+
+	handler := NexposeVulnNotificationHandler{
+		Producer:     producer,
+		AssetFetcher: assetFetcher,
+		LogFn:        runhttp.LoggerFromContext,
+		StatFn:       runhttp.StatFromContext,
+	}
+
+	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
+	scanInfo := ScanInfo{
+		SiteID: "12345",
+	}
+	handler.Handle(ctx, scanInfo)
+}
