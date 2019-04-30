@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/asecurityteam/logevent"
+	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 	"github.com/asecurityteam/runhttp"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetfetcher"
 )
 
 func TestNexposeVulnNotificationHandler(t *testing.T) {
@@ -19,10 +19,10 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 	assetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
 
-	assetChan := make(chan assetfetcher.Asset, 1)
+	assetChan := make(chan domain.AssetEvent, 1)
 	errChan := make(chan error, 1)
 
-	asset := assetfetcher.Asset{
+	asset := domain.AssetEvent{
 		ID: 12345,
 	}
 
@@ -54,11 +54,11 @@ func TestNexposeVulnNotificationHandlerMultipleAssets(t *testing.T) {
 	assetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
 
-	assetChan := make(chan assetfetcher.Asset, 2)
+	assetChan := make(chan domain.AssetEvent, 2)
 	errChan := make(chan error, 1)
 
-	asset := assetfetcher.Asset{ID: 12345}
-	asset2 := assetfetcher.Asset{ID: 56789}
+	asset := domain.AssetEvent{ID: 12345}
+	asset2 := domain.AssetEvent{ID: 56789}
 
 	assetChan <- asset
 	assetChan <- asset2
@@ -89,7 +89,7 @@ func TestNexposeVulnNotificationHandlerError(t *testing.T) {
 	assetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
 
-	assetChan := make(chan assetfetcher.Asset, 1)
+	assetChan := make(chan domain.AssetEvent, 1)
 	errChan := make(chan error, 1)
 
 	errChan <- errors.New("myError")
@@ -120,11 +120,11 @@ func TestNexposeVulnNotificationHandlerWithAssetsAndErrors(t *testing.T) {
 	assetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
 
-	assetChan := make(chan assetfetcher.Asset, 2)
+	assetChan := make(chan domain.AssetEvent, 2)
 	errChan := make(chan error, 1)
 
-	asset := assetfetcher.Asset{ID: 12345}
-	asset2 := assetfetcher.Asset{ID: 56789}
+	asset := domain.AssetEvent{ID: 12345}
+	asset2 := domain.AssetEvent{ID: 56789}
 	err := errors.New("myError")
 
 	assetChan <- asset

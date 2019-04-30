@@ -41,7 +41,7 @@ func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo
 			} else {
 				stater.Count("assetreceived.success", 1)
 				wg.Add(1)
-				go func(ctx context.Context, asset domain.Asset) {
+				go func(ctx context.Context, asset domain.AssetEvent) {
 					defer wg.Done()
 					err := h.Producer.Produce(ctx, asset)
 					if err != nil {

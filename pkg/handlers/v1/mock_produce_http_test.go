@@ -35,7 +35,7 @@ func (m *MockProducer) EXPECT() *MockProducerMockRecorder {
 }
 
 // Produce mocks base method
-func (m *MockProducer) Produce(arg0 context.Context, arg1 domain.Asset) error {
+func (m *MockProducer) Produce(arg0 context.Context, arg1 domain.AssetEvent) error {
 	ret := m.ctrl.Call(m, "Produce", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0

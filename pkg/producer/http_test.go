@@ -19,7 +19,7 @@ func TestProduceSuccess(t *testing.T) {
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 
-	asset := domain.Asset{
+	asset := domain.AssetEvent{
 		IP: "127.0.0.1",
 		ID: 123456,
 	}
@@ -46,7 +46,7 @@ func TestProduceError(t *testing.T) {
 
 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(nil, errors.New("HTTPError"))
 
-	asset := domain.Asset{
+	asset := domain.AssetEvent{
 		IP: "127.0.0.1",
 		ID: 123456,
 	}

@@ -16,7 +16,7 @@ type AssetProducer struct {
 }
 
 // Produce publishes sends the asset event to the streaming appliance
-func (p *AssetProducer) Produce(ctx context.Context, asset domain.Asset) error {
+func (p *AssetProducer) Produce(ctx context.Context, asset domain.AssetEvent) error {
 	body, _ := json.Marshal(asset)
 	req, err := http.NewRequest(http.MethodPost, p.Endpoint, bytes.NewReader(body))
 	if err != nil {
