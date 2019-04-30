@@ -16,6 +16,7 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	assetFetcher := NewMockAssetFetcher(mockCtrl)
+	producer := NewMockProducer(mockCtrl)
 
 	assetChan := make(chan domain.AssetEvent)
 	errChan := make(chan error)
@@ -31,8 +32,10 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 	}()
 
 	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetChan, errChan)
+	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 
 	handler := NexposeVulnNotificationHandler{
+		Producer:     producer,
 		AssetFetcher: assetFetcher,
 		LogFn:        runhttp.LoggerFromContext,
 		StatFn:       runhttp.StatFromContext,

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
@@ -29,8 +28,5 @@ func (p *AssetProducer) Produce(ctx context.Context, asset domain.Asset) error {
 		return err
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected response from streaming appliance: %d", res.StatusCode)
-	}
 	return nil
 }

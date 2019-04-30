@@ -37,13 +37,14 @@ func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo
 				assetChan = nil
 			} else {
 				stater.Count("assetreceived.success", 1)
-				err := h.Producer.Produce(ctx, asset)
-				if err != nil {
-					stater.Count("producer.error", 1)
-					logger.Error(logs.ProducerFailure{
-						Reason: err.Error(),
-					})
-				}
+				go func(ctx context.Context, asset domain.Asset) {
+					err := h.Producer.Produce(ctx, asset)
+					if err != nil {
+						logger.Error(logs.ProducerFailure{
+							Reason: err.Error(),
+						})
+					}
+				}(ctx, asset)
 			}
 		case err, ok := <-errChan:
 			if !ok {
