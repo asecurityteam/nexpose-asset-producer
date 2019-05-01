@@ -2,10 +2,8 @@ package v1
 
 import (
 	"context"
-	"io/ioutil"
 	"testing"
 
-	"github.com/asecurityteam/logevent"
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
@@ -39,11 +37,10 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 		StatFn:       MockStatFn,
 	}
 
-	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
 	scanInfo := ScanInfo{
 		SiteID: "12345",
 	}
-	handler.Handle(ctx, scanInfo)
+	handler.Handle(context.Background(), scanInfo)
 }
 
 func TestNexposeVulnNotificationHandlerMultipleAssets(t *testing.T) {
@@ -74,11 +71,10 @@ func TestNexposeVulnNotificationHandlerMultipleAssets(t *testing.T) {
 		StatFn:       MockStatFn,
 	}
 
-	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
 	scanInfo := ScanInfo{
 		SiteID: "12345",
 	}
-	handler.Handle(ctx, scanInfo)
+	handler.Handle(context.Background(), scanInfo)
 }
 
 func TestNexposeVulnNotificationHandlerError(t *testing.T) {
@@ -107,11 +103,10 @@ func TestNexposeVulnNotificationHandlerError(t *testing.T) {
 		StatFn:       MockStatFn,
 	}
 
-	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
 	scanInfo := ScanInfo{
 		SiteID: "12345",
 	}
-	handler.Handle(ctx, scanInfo)
+	handler.Handle(context.Background(), scanInfo)
 }
 
 func TestNexposeVulnNotificationHandlerWithAssetsAndErrors(t *testing.T) {
@@ -146,11 +141,10 @@ func TestNexposeVulnNotificationHandlerWithAssetsAndErrors(t *testing.T) {
 		StatFn:       MockStatFn,
 	}
 
-	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
 	scanInfo := ScanInfo{
 		SiteID: "12345",
 	}
-	handler.Handle(ctx, scanInfo)
+	handler.Handle(context.Background(), scanInfo)
 }
 
 func TestNexposeVulnNotificationHandlerProducerError(t *testing.T) {
@@ -183,9 +177,8 @@ func TestNexposeVulnNotificationHandlerProducerError(t *testing.T) {
 		StatFn:       MockStatFn,
 	}
 
-	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
 	scanInfo := ScanInfo{
 		SiteID: "12345",
 	}
-	handler.Handle(ctx, scanInfo)
+	handler.Handle(context.Background(), scanInfo)
 }
