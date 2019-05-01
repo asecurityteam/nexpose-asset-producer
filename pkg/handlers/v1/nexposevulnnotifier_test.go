@@ -7,7 +7,6 @@ import (
 
 	"github.com/asecurityteam/logevent"
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
-	"github.com/asecurityteam/runhttp"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 )
@@ -36,8 +35,8 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 	handler := NexposeVulnNotificationHandler{
 		Producer:     producer,
 		AssetFetcher: assetFetcher,
-		LogFn:        runhttp.LoggerFromContext,
-		StatFn:       runhttp.StatFromContext,
+		LogFn:        func(ctx context.Context) domain.Logger { return NewMockLogger(mockCtrl) },
+		StatFn:       MockStatFn,
 	}
 
 	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
@@ -71,8 +70,8 @@ func TestNexposeVulnNotificationHandlerMultipleAssets(t *testing.T) {
 	handler := NexposeVulnNotificationHandler{
 		Producer:     producer,
 		AssetFetcher: assetFetcher,
-		LogFn:        runhttp.LoggerFromContext,
-		StatFn:       runhttp.StatFromContext,
+		LogFn:        func(ctx context.Context) domain.Logger { return NewMockLogger(mockCtrl) },
+		StatFn:       MockStatFn,
 	}
 
 	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
@@ -85,6 +84,7 @@ func TestNexposeVulnNotificationHandlerMultipleAssets(t *testing.T) {
 func TestNexposeVulnNotificationHandlerError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	mockLogger := NewMockLogger(mockCtrl)
 
 	assetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
@@ -98,12 +98,13 @@ func TestNexposeVulnNotificationHandlerError(t *testing.T) {
 
 	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetChan, errChan)
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil).Times(0)
+	mockLogger.EXPECT().Error(gomock.Any())
 
 	handler := NexposeVulnNotificationHandler{
 		Producer:     producer,
 		AssetFetcher: assetFetcher,
-		LogFn:        runhttp.LoggerFromContext,
-		StatFn:       runhttp.StatFromContext,
+		LogFn:        func(ctx context.Context) domain.Logger { return mockLogger },
+		StatFn:       MockStatFn,
 	}
 
 	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
@@ -116,6 +117,7 @@ func TestNexposeVulnNotificationHandlerError(t *testing.T) {
 func TestNexposeVulnNotificationHandlerWithAssetsAndErrors(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	mockLogger := NewMockLogger(mockCtrl)
 
 	assetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
@@ -135,12 +137,13 @@ func TestNexposeVulnNotificationHandlerWithAssetsAndErrors(t *testing.T) {
 
 	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetChan, errChan)
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil).Times(2)
+	mockLogger.EXPECT().Error(gomock.Any())
 
 	handler := NexposeVulnNotificationHandler{
 		Producer:     producer,
 		AssetFetcher: assetFetcher,
-		LogFn:        runhttp.LoggerFromContext,
-		StatFn:       runhttp.StatFromContext,
+		LogFn:        func(ctx context.Context) domain.Logger { return mockLogger },
+		StatFn:       MockStatFn,
 	}
 
 	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
@@ -153,6 +156,7 @@ func TestNexposeVulnNotificationHandlerWithAssetsAndErrors(t *testing.T) {
 func TestNexposeVulnNotificationHandlerProducerError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
+	mockLogger := NewMockLogger(mockCtrl)
 
 	assetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
@@ -170,12 +174,13 @@ func TestNexposeVulnNotificationHandlerProducerError(t *testing.T) {
 
 	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetChan, errChan)
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(errors.New("HTTPError"))
+	mockLogger.EXPECT().Error(gomock.Any())
 
 	handler := NexposeVulnNotificationHandler{
 		Producer:     producer,
 		AssetFetcher: assetFetcher,
-		LogFn:        runhttp.LoggerFromContext,
-		StatFn:       runhttp.StatFromContext,
+		LogFn:        func(ctx context.Context) domain.Logger { return mockLogger },
+		StatFn:       MockStatFn,
 	}
 
 	ctx := logevent.NewContext(context.Background(), logevent.New(logevent.Config{Output: ioutil.Discard}))
