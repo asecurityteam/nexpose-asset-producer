@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"sync"
 
@@ -52,6 +51,10 @@ type NexposeAssetFetcher struct {
 	HTTPClient *http.Client
 	// The Nexpose host that points to your instance
 	Host string
+	//
+	Username string
+	//
+	Password string
 	// The number of assets that should be returned at one time
 	PageSize int
 }
@@ -65,7 +68,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	// have to page through to get all the assets, start with page 0
 	// make the first call to Nexpose to get the total number of pages we'll
 	var currentPage = 0
-	req, err := newNexposeSiteAssetsRequest(c.Host, siteID, currentPage, c.PageSize)
+	req, err := c.newNexposeSiteAssetsRequest(siteID, currentPage)
 	if err != nil {
 		errChan <- err
 		return nil, errChan
@@ -122,7 +125,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 
 func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan domain.AssetEvent, errChan chan error) {
 	defer wg.Done()
-	req, err := newNexposeSiteAssetsRequest(c.Host, siteID, page, c.PageSize)
+	req, err := c.newNexposeSiteAssetsRequest(siteID, page)
 	if err != nil {
 		errChan <- err
 		return
@@ -154,19 +157,19 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 }
 
 // newNexposeSiteAssetsRequest builds URL we'll use to make the request to Nexpose's site assets endpoint
-func newNexposeSiteAssetsRequest(host string, siteID string, page int, size int) (*http.Request, error) {
-	u, err := url.Parse(host)
+func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page int) (*http.Request, error) {
+	u, err := url.Parse(c.Host)
 	if err != nil {
-		return nil, &URLParsingError{err, host}
+		return nil, &URLParsingError{err, c.Host}
 	}
 	u.Path = path.Join(u.Path, basePath, nexposeSite, siteID, nexposeAssets)
 	q := u.Query()
 	q.Set(pageQueryParam, fmt.Sprint(page))
-	q.Set(sizeQueryParam, fmt.Sprint(size))
+	q.Set(sizeQueryParam, fmt.Sprint(c.PageSize))
 	u.RawQuery = q.Encode()
 	req, _ := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 	// the only time http.NewRequest returns an error is if there's a parsing error,
 	// which we already checked for earlier, so no need to check it again
-	req.SetBasicAuth(os.Getenv("NEXPOSE_USERNAME"), os.Getenv("NEXPOSE_PASSWORD"))
+	req.SetBasicAuth(c.Username, c.Password)
 	return req, nil
 }

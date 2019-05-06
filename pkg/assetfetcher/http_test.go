@@ -763,21 +763,39 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 }
 
 func TestNewNexposeSiteAssetsRequestSuccess(t *testing.T) {
-	req, err := newNexposeSiteAssetsRequest("http://nexpose-instance.com", "siteID", 1, 100)
+	assetFetcher := &NexposeAssetFetcher{
+		Host:     "http://localhost",
+		Username: "username",
+		Password: "password",
+		PageSize: 100,
+	}
+	req, err := assetFetcher.newNexposeSiteAssetsRequest("siteID", 1)
 
 	assert.Nil(t, err)
-	assert.Equal(t, "http://nexpose-instance.com/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
+	assert.Equal(t, "http://localhost/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
 }
 
 func TestNewNexposeSiteAssetsRequestWithExtraSlashes(t *testing.T) {
-	req, err := newNexposeSiteAssetsRequest("http://nexpose-instance.com/", "/siteID/", 1, 100)
+	assetFetcher := &NexposeAssetFetcher{
+		Host:     "http://localhost",
+		Username: "username",
+		Password: "password",
+		PageSize: 100,
+	}
+	req, err := assetFetcher.newNexposeSiteAssetsRequest("/siteID/", 1)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "http://nexpose-instance.com/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
+	assert.Equal(t, "http://localhost/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
 }
 
 func TestNewNexposeSiteAssetsRequestWithInvalidHost(t *testing.T) {
-	_, err := newNexposeSiteAssetsRequest("http://nexpose!@#$%^&*().com", "siteID", 1, 100)
+	assetFetcher := &NexposeAssetFetcher{
+		Host:     "http://nexpose!@#$%^&*().com",
+		Username: "username",
+		Password: "password",
+		PageSize: 100,
+	}
+	_, err := assetFetcher.newNexposeSiteAssetsRequest("siteID", 1)
 
 	assert.IsType(t, &URLParsingError{}, err) // Error will be returned from url.Parse
 }
