@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-
 	"time"
 
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
