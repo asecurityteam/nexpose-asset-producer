@@ -49,11 +49,11 @@ type Page struct {
 type NexposeAssetFetcher struct {
 	// The Nexpose HTTP Cient
 	HTTPClient *http.Client
-	// The Nexpose host that points to your instance
-	Host string
-	//
+	// The scheme and host of a Nexpose instance
+	Host *url.URL
+	// The username used to login to the Nexpose instance at the given host
 	Username string
-	//
+	// The password for the corresponding username
 	Password string
 	// The number of assets that should be returned at one time
 	PageSize int
@@ -68,11 +68,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	// have to page through to get all the assets, start with page 0
 	// make the first call to Nexpose to get the total number of pages we'll
 	var currentPage = 0
-	req, err := c.newNexposeSiteAssetsRequest(siteID, currentPage)
-	if err != nil {
-		errChan <- err
-		return nil, errChan
-	}
+	req := c.newNexposeSiteAssetsRequest(siteID, currentPage)
 
 	res, err := c.HTTPClient.Do(req.WithContext(ctx))
 	if err != nil {
@@ -125,11 +121,8 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 
 func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan domain.AssetEvent, errChan chan error) {
 	defer wg.Done()
-	req, err := c.newNexposeSiteAssetsRequest(siteID, page)
-	if err != nil {
-		errChan <- err
-		return
-	}
+	req := c.newNexposeSiteAssetsRequest(siteID, page)
+
 	res, err := c.HTTPClient.Do(req.WithContext(ctx))
 	if err != nil {
 		errChan <- &NexposeHTTPRequestError{err, req.URL.String()}
@@ -157,11 +150,8 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 }
 
 // newNexposeSiteAssetsRequest builds URL we'll use to make the request to Nexpose's site assets endpoint
-func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page int) (*http.Request, error) {
-	u, err := url.Parse(c.Host)
-	if err != nil {
-		return nil, &URLParsingError{err, c.Host}
-	}
+func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page int) *http.Request {
+	u, _ := url.Parse(c.Host.String())
 	u.Path = path.Join(u.Path, basePath, nexposeSite, siteID, nexposeAssets)
 	q := u.Query()
 	q.Set(pageQueryParam, fmt.Sprint(page))
@@ -171,5 +161,5 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 	// the only time http.NewRequest returns an error is if there's a parsing error,
 	// which we already checked for earlier, so no need to check it again
 	req.SetBasicAuth(c.Username, c.Password)
-	return req, nil
+	return req
 }

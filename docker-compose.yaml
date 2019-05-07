@@ -24,13 +24,11 @@ services:
       - SERVERFULL_RUNTIME_STATS_DATADOG_ADDRESS=statsd:8126
       - SERVERFULL_RUNTIME_SIGNALS_INSTALLED=OS
       - SERVERFULL_RUNTIME_SIGNALS_OS_SIGNALS=15 2
-      ## Nexpose and producer configuration can be set here. Sensitive information
-      ## should be set through environment variables and are just here for documentation purposes
-      - NEXPOSE_HOST=http://localhost
-      - NEXPOSE_USERNAME=username
-      - NEXPOSE_PASSWORD=password
-      - NEXPOSE_ASSETFETCHERPAGESIZE=100
-      - PRODUCER_ENDPOINT=http://localhost
+      - NEXPOSE_HOST
+      - NEXPOSE_USERNAME
+      - NEXPOSE_PASSWORD
+      - NEXPOSE_ASSETFETCHERPAGESIZE
+      - PRODUCER_ENDPOINT
   gateway:
     build:
       context: .

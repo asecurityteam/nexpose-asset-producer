@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetfetcher"
-	nexposevulnnotiifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
+	nexposevulnnotifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/producer"
 	"github.com/asecurityteam/runhttp"
-	"github.com/asecurityteam/serverfull/pkg"
+	serverfull "github.com/asecurityteam/serverfull/pkg"
 	serverfulldomain "github.com/asecurityteam/serverfull/pkg/domain"
 	"github.com/asecurityteam/settings"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -36,7 +36,7 @@ func main() {
 	}
 	assetProducer.HTTPClient = http.DefaultClient
 
-	notifier := &nexposevulnnotiifier.NexposeVulnNotificationHandler{
+	notifier := &nexposevulnnotifier.NexposeVulnNotificationHandler{
 		Producer:     assetProducer,
 		AssetFetcher: assetFetcher,
 		LogFn:        runhttp.LoggerFromContext,
