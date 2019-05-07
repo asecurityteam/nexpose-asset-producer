@@ -27,7 +27,7 @@ services:
       - NEXPOSE_HOST
       - NEXPOSE_USERNAME
       - NEXPOSE_PASSWORD
-      - NEXPOSE_ASSETFETCHERPAGESIZE
+      - NEXPOSE_PAGESIZE
       - PRODUCER_ENDPOINT
   gateway:
     build:
