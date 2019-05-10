@@ -10,7 +10,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"

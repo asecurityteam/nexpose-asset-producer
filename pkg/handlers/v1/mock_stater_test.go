@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
 
 type nopStat struct{}

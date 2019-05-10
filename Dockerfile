@@ -1,5 +1,5 @@
 FROM golang:latest AS BUILDER
-WORKDIR $GOPATH/src/github.com/asecurityteam/nexpose-vuln-notifier
+WORKDIR $GOPATH/src/github.com/asecurityteam/nexpose-asset-producer
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o /opt/app main.go
 

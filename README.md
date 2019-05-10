@@ -1,11 +1,11 @@
-<a id="markdown-nexpose-vuln-notifier" name="nexpose-vuln-notifier"></a>
-# nexpose-vuln-notifier - A service that gets the latest Nexpose scan results and publishes the found vulnerabilities to an event stream
+<a id="markdown-nexpose-asset-producer" name="nexpose-asset-producer"></a>
+# nexpose-asset-producer - A service that produces scanned Nexpose assets to an event stream
 
-<https://github.com/asecurityteam/nexpose-vuln-notifier>
+<https://github.com/asecurityteam/nexpose-asset-producer>
 
 <!-- TOC -->
 
-- [nexpose-vuln-notifier - A service that gets the latest Nexpose scan results and publishes the found vulnerabilities to an event stream](#nexpose-vuln-notifier)
+- [nexpose-asset-producer](#nexpose-asset-producer)
     - [Overview](#overview)
     - [Quick Start](#quick-start)
     - [Configuration](#configuration)
@@ -20,10 +20,19 @@
 
 <a id="markdown-overview" name="overview"></a>
 ## Overview
+This project is meant to be used with Nexpose. It provides a docker
+image that when run, provides an endpoint that can be called with a
+Site ID for a site that was recently scanned. The service will query the
+Nexpose API with the Scan ID in order to get a list of assets that are
+in that site, then produce each individual asset on an event stream.
 
-<What does this project do?>
-<What does this project _not_ do?>
-<Why did we make this project?>
+This project is a part of a bigger project to Automate Nexpose Vulnerability
+Scan results. The idea is that once a scan is run, the scan ID can be sent
+to this nexpose-asset-producer, then once the nexpose-asset-producer puts
+the asset on the event stream, it can be hydrated with vulnerability
+information, including vulnerability details and solutions, which also
+need to be queried from the Nexpose API, so that you can find out which
+ vulnerabilities exist in your assets and how to fix them.
 <Links to other references or material.>
 
 <a id="markdown-quick-start" name="quick-start"></a>
@@ -37,11 +46,13 @@
 <Details of how to actually work with the project>
 
 ### Environment Variables
-NEXPOSE_HOST
-NEXPOSE_USERNAME
-NEXPOSE_PASSWORD
-NEXPOSE_REQUEST_TIMEOUT_MS
-NEXPOSE_SITE_ASSET_PAGE_SIZE (default 100)
+Here are the environment variables that need to be set
+|Name              |Required | Description                                                    |Example                        |
+|------------------|:-------:|----------------------------------------------------------------|-------------------------------|
+|NEXPOSE_HOST      |Yes      |Scheme and host for the Nexpose instance                        | https://nexpose.mycompany.com |
+|NEXPOSE_USERNAME  |Yes      |Username to access the Nexpose instance                         | myusername                    |
+|NEXPOSE_PASSWORD  |Yes      |Password that corresponds to the provided username              | mypassword                    |
+|NEXPOSE_PAGE_SIZE |No       |The number of Nexpose assets to get back at a time (default 100)| 100                           |
 
 <a id="markdown-status" name="status"></a>
 ## Status

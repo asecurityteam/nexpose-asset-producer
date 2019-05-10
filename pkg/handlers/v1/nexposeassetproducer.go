@@ -5,8 +5,8 @@ import (
 
 	"sync"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/logs"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/logs"
 )
 
 // ScanInfo represents the fields we want from the incoming payload
@@ -15,18 +15,17 @@ type ScanInfo struct {
 	SiteID string `json:"site_id"`
 }
 
-// NexposeVulnNotificationHandler is a lambda handler that fetches Nexpose Assets and sends them to an event stream
-type NexposeVulnNotificationHandler struct {
+// NexposeScannedAssetProducer is a lambda handler that fetches Nexpose Assets and sends them to an event stream
+type NexposeScannedAssetProducer struct {
 	Producer     domain.Producer
 	AssetFetcher domain.AssetFetcher
 	LogFn        domain.LogFn
 	StatFn       domain.StatFn
 }
 
-// Handle is an AWS Lambda handler that takes in a ScanID and SiteID for a Nexpose scan that has completed,
-// get all the Assets in the site that was scanned, hydrates the asset with the vulnerabilities that were found
-// on that asset and publishes the asset to a stream
-func (h *NexposeVulnNotificationHandler) Handle(ctx context.Context, in ScanInfo) {
+// Handle is an AWS Lambda handler that takes in a SiteID for a Nexpose scan that has completed,
+// get all the assets in the site that was scanned and produces each asset to a stream
+func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 	logger := h.LogFn(ctx)
 	stater := h.StatFn(ctx)
 

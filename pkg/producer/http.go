@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
 
 // AssetProducer holds streaming appliance configuration

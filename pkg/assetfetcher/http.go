@@ -10,7 +10,7 @@ import (
 	"path"
 	"sync"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
 
 // This const block helps format our request to the Nexpose sites asset endpoint:

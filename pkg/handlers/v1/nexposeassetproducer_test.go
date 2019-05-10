@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 )
 
-func TestNexposeVulnNotificationHandler(t *testing.T) {
+func TestNexposeAssetProducerHandler(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -30,7 +30,7 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetChan, errChan)
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 
-	handler := NexposeVulnNotificationHandler{
+	handler := NexposeScannedAssetProducer{
 		Producer:     producer,
 		AssetFetcher: assetFetcher,
 		LogFn:        func(ctx context.Context) domain.Logger { return NewMockLogger(mockCtrl) },
@@ -43,7 +43,7 @@ func TestNexposeVulnNotificationHandler(t *testing.T) {
 	handler.Handle(context.Background(), scanInfo)
 }
 
-func TestNexposeVulnNotificationHandlerMultipleAssets(t *testing.T) {
+func TestNexposeAssetProducerHandlerMultipleAssets(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -64,7 +64,7 @@ func TestNexposeVulnNotificationHandlerMultipleAssets(t *testing.T) {
 	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetChan, errChan)
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil).Times(2)
 
-	handler := NexposeVulnNotificationHandler{
+	handler := NexposeScannedAssetProducer{
 		Producer:     producer,
 		AssetFetcher: assetFetcher,
 		LogFn:        func(ctx context.Context) domain.Logger { return NewMockLogger(mockCtrl) },
@@ -77,7 +77,7 @@ func TestNexposeVulnNotificationHandlerMultipleAssets(t *testing.T) {
 	handler.Handle(context.Background(), scanInfo)
 }
 
-func TestNexposeVulnNotificationHandlerError(t *testing.T) {
+func TestNexposeAssetProducerHandlerError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockLogger := NewMockLogger(mockCtrl)
@@ -96,7 +96,7 @@ func TestNexposeVulnNotificationHandlerError(t *testing.T) {
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil).Times(0)
 	mockLogger.EXPECT().Error(gomock.Any())
 
-	handler := NexposeVulnNotificationHandler{
+	handler := NexposeScannedAssetProducer{
 		Producer:     producer,
 		AssetFetcher: assetFetcher,
 		LogFn:        func(ctx context.Context) domain.Logger { return mockLogger },
@@ -109,7 +109,7 @@ func TestNexposeVulnNotificationHandlerError(t *testing.T) {
 	handler.Handle(context.Background(), scanInfo)
 }
 
-func TestNexposeVulnNotificationHandlerWithAssetsAndErrors(t *testing.T) {
+func TestNexposeAssetProducerHandlerWithAssetsAndErrors(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockLogger := NewMockLogger(mockCtrl)
@@ -134,7 +134,7 @@ func TestNexposeVulnNotificationHandlerWithAssetsAndErrors(t *testing.T) {
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil).Times(2)
 	mockLogger.EXPECT().Error(gomock.Any())
 
-	handler := NexposeVulnNotificationHandler{
+	handler := NexposeScannedAssetProducer{
 		Producer:     producer,
 		AssetFetcher: assetFetcher,
 		LogFn:        func(ctx context.Context) domain.Logger { return mockLogger },
@@ -147,7 +147,7 @@ func TestNexposeVulnNotificationHandlerWithAssetsAndErrors(t *testing.T) {
 	handler.Handle(context.Background(), scanInfo)
 }
 
-func TestNexposeVulnNotificationHandlerProducerError(t *testing.T) {
+func TestNexposeAssetProducerHandlerProducerError(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockLogger := NewMockLogger(mockCtrl)
@@ -170,7 +170,7 @@ func TestNexposeVulnNotificationHandlerProducerError(t *testing.T) {
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(errors.New("HTTPError"))
 	mockLogger.EXPECT().Error(gomock.Any())
 
-	handler := NexposeVulnNotificationHandler{
+	handler := NexposeScannedAssetProducer{
 		Producer:     producer,
 		AssetFetcher: assetFetcher,
 		LogFn:        func(ctx context.Context) domain.Logger { return mockLogger },
