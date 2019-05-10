@@ -10,7 +10,7 @@
 
 [[constraint]]
   name = "github.com/asecurityteam/serverfull"
-  branch = "master"
+  version = "0.1.0"
 
 [[constraint]]
   name = "github.com/asecurityteam/serverfull-gateway"
