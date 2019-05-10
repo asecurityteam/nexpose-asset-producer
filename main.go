@@ -9,10 +9,8 @@ import (
 	nexposevulnnotifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
 	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/producer"
 	"github.com/asecurityteam/runhttp"
-	serverfull "github.com/asecurityteam/serverfull/pkg"
-	serverfulldomain "github.com/asecurityteam/serverfull/pkg/domain"
+	"github.com/asecurityteam/serverfull"
 	"github.com/asecurityteam/settings"
-	"github.com/aws/aws-lambda-go/lambda"
 )
 
 func main() {
@@ -43,15 +41,12 @@ func main() {
 		StatFn:       runhttp.StatFromContext,
 	}
 
-	lambdaHandlers := map[string]serverfulldomain.Handler{
-		"notification": lambda.NewHandler(notifier.Handle),
+	lambdaHandlers := map[string]serverfull.Function{
+		"notification": serverfull.NewFunction(notifier.Handle),
 	}
 
-	rt, err := serverfull.NewStatic(ctx, source, lambdaHandlers)
-	if err != nil {
-		panic(err.Error())
-	}
-	if err := rt.Run(); err != nil {
+	fetcher := &serverfull.StaticFetcher{Functions: lambdaHandlers}
+	if err := serverfull.Start(ctx, source, fetcher); err != nil {
 		panic(err.Error())
 	}
 }
