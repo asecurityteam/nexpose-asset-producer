@@ -48,11 +48,11 @@ need to be queried from the Nexpose API, so that you can find out which
 ### Environment Variables
 Here are the environment variables that need to be set
 |Name              |Required | Description                                                    |Example                        |
-|------------------|:-------:|----------------------------------------------------------------|-------------------------------|
-|NEXPOSE_HOST      |Yes      |Scheme and host for the Nexpose instance                        | https://nexpose.mycompany.com |
-|NEXPOSE_USERNAME  |Yes      |Username to access the Nexpose instance                         | myusername                    |
-|NEXPOSE_PASSWORD  |Yes      |Password that corresponds to the provided username              | mypassword                    |
-|NEXPOSE_PAGE_SIZE |No       |The number of Nexpose assets to get back at a time (default 100)| 100                           |
+|-----------------|:-------:|----------------------------------------------------------------|-------------------------------|
+|NEXPOSE_HOST     |Yes      |Scheme and host for the Nexpose instance                        | https://nexpose.mycompany.com |
+|NEXPOSE_USERNAME |Yes      |Username to access the Nexpose instance                         | myusername                    |
+|NEXPOSE_PASSWORD |Yes      |Password that corresponds to the provided username              | mypassword                    |
+|NEXPOSE_PAGESIZE |No       |The number of Nexpose assets to get back at a time (default 100)| 100                           |
 
 <a id="markdown-status" name="status"></a>
 ## Status
