@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetfetcher"
-	nexposevulnnotifier "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1"
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/producer"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/assetfetcher"
+	nexposeassetproducer "github.com/asecurityteam/nexpose-asset-producer/pkg/handlers/v1"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/producer"
 	"github.com/asecurityteam/runhttp"
 	"github.com/asecurityteam/serverfull"
 	"github.com/asecurityteam/settings"
@@ -34,7 +34,7 @@ func main() {
 	}
 	assetProducer.HTTPClient = http.DefaultClient
 
-	notifier := &nexposevulnnotifier.NexposeVulnNotificationHandler{
+	notifier := &nexposeassetproducer.NexposeScannedAssetProducer{
 		Producer:     assetProducer,
 		AssetFetcher: assetFetcher,
 		LogFn:        runhttp.LoggerFromContext,

@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

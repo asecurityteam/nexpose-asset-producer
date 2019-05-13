@@ -37,7 +37,7 @@ x-transportd:
       count: 1
 info:
   version: 1.0.0
-  title: "nexpose-vuln-notifier"
+  title: "nexpose-asset-producer"
   description: "A service that gets the latest Nexpose scan results and publishes the found vulnerabilities to an event stream"
   contact:
     name: Security Development

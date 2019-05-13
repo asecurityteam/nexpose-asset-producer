@@ -13,20 +13,6 @@
   version = "1.0.4"
 
 [[projects]]
-  digest = "1:ca6c1c30e4d05b29e4a30ae0d781817b40db3cbbecf4a94f241878b483c0026c"
-  name = "github.com/asecurityteam/nexpose-vuln-notifier"
-  packages = [
-    "pkg/assetfetcher",
-    "pkg/domain",
-    "pkg/handlers/v1",
-    "pkg/logs",
-    "pkg/producer",
-  ]
-  pruneopts = "UT"
-  revision = "bd1841a5768db0173b8e06f544ff6e3547d73a22"
-  version = "v0.2.0"
-
-[[projects]]
   branch = "master"
   digest = "1:fe321de7854c65af149fe7c66a7ed3ad82046902536e1aa41ec509f5fb942426"
   name = "github.com/asecurityteam/runhttp"
@@ -185,11 +171,6 @@
   analyzer-version = 1
   input-imports = [
     "github.com/asecurityteam/logevent",
-    "github.com/asecurityteam/nexpose-vuln-notifier/pkg/assetfetcher",
-    "github.com/asecurityteam/nexpose-vuln-notifier/pkg/domain",
-    "github.com/asecurityteam/nexpose-vuln-notifier/pkg/handlers/v1",
-    "github.com/asecurityteam/nexpose-vuln-notifier/pkg/logs",
-    "github.com/asecurityteam/nexpose-vuln-notifier/pkg/producer",
     "github.com/asecurityteam/runhttp",
     "github.com/asecurityteam/serverfull",
     "github.com/asecurityteam/settings",
