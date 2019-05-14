@@ -17,10 +17,10 @@ type AssetProducer struct {
 }
 
 type assetEventPayload struct {
-	LastScanned time.Time `json:"lastScanned"`
+	LastScanned time.Time `json:"lastScanned,omitempty"`
 	Hostname    string    `json:"hostName,omitempty"`
-	ID          int64     `json:"id"`
-	IP          string    `json:"ip"`
+	ID          int64     `json:"id,omitempty"`
+	IP          string    `json:"ip,omitempty"`
 }
 
 // Produce publishes sends the asset event to the streaming appliance

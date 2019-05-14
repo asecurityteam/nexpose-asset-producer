@@ -3,6 +3,7 @@ package assetfetcher
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -18,6 +19,7 @@ type errorTest struct {
 func TestAssetFetcherErrors(t *testing.T) {
 	nexposeTestURL := "http://nexpose-instance.com"
 	customError := errors.New("myCustomError")
+	lastScannedNow := time.Now()
 	tc := []errorTest{
 		{
 			"URLParsingError",
@@ -48,6 +50,11 @@ func TestAssetFetcherErrors(t *testing.T) {
 			"ErrorConvertingAssetPayload",
 			&ErrorConvertingAssetPayload{123456, customError},
 			fmt.Sprintf("Error converting asset 123456 payload to event %v", customError),
+		},
+		{
+			"MissingRequiredFields",
+			&MissingRequiredFields{123456, "", lastScannedNow},
+			fmt.Sprintf("Required fields are missing. ID: 123456, IP: , LastScanned: %v", lastScannedNow),
 		},
 	}
 
@@ -90,6 +97,10 @@ func TestAssetFetcherErrorsCanBeNil(t *testing.T) {
 		{
 			"ErrorConvertingAssetPayload",
 			&ErrorConvertingAssetPayload{},
+		},
+		{
+			"MissingRequiredFields",
+			&MissingRequiredFields{},
 		},
 	}
 

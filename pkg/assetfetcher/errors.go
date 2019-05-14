@@ -1,6 +1,9 @@
 package assetfetcher
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // URLParsingError when trying to parse the given host or URL
 type URLParsingError struct {
@@ -66,4 +69,16 @@ type ErrorConvertingAssetPayload struct {
 // Error returns an ErrorConvertingAssetPayload
 func (e *ErrorConvertingAssetPayload) Error() string {
 	return fmt.Sprintf("Error converting asset %v payload to event %v", e.AssetID, e.Inner)
+}
+
+// MissingRequiredFields represents an error we get if the ID, IP, or lastScanned date is empty
+type MissingRequiredFields struct {
+	AssetID          int64
+	AssetIP          string
+	AssetLastScanned time.Time
+}
+
+// Error returns an MissingRequiredFields
+func (e *MissingRequiredFields) Error() string {
+	return fmt.Sprintf("Required fields are missing. ID: %v, IP: %s, LastScanned: %v", e.AssetID, e.AssetIP, e.AssetLastScanned)
 }
