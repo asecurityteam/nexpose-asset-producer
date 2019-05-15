@@ -38,6 +38,9 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 			if !ok {
 				assetChan = nil
 			} else {
+				if asset == (domain.AssetEvent{}) {
+					break
+				}
 				stater.Count("assetreceived.success", 1)
 				wg.Add(1)
 				go func(ctx context.Context, asset domain.AssetEvent) {
