@@ -20,13 +20,15 @@ func TestFetchAssetsSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
-
-	expectedAsset := domain.AssetEvent{
-		IP: "127.0.0.1",
-		ID: 123456,
+	asset := Asset{
+		IP:      "127.0.0.1",
+		ID:      123456,
+		History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}},
 	}
+	expectedAsset, err := asset.AssetPayloadToAssetEvent()
+	assert.NoError(t, err)
 	resp := SiteAssetsResponse{
-		Resources: []Asset{{IP: "127.0.0.1", ID: 123456}},
+		Resources: []Asset{asset},
 		Page: Page{
 			TotalPages:     1,
 			TotalResources: 1,
@@ -75,25 +77,28 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
-
-	expectedAsset1 := domain.AssetEvent{
-		IP: "127.0.0.1",
-		ID: 123,
+	asset1 := Asset{
+		IP:      "127.0.0.1",
+		ID:      123456,
+		History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}},
 	}
-	expectedAsset2 := domain.AssetEvent{
-		IP: "127.0.0.2",
-		ID: 456,
+	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent()
+	asset2 := Asset{
+		IP:      "127.0.0.1",
+		ID:      123456,
+		History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}},
 	}
+	expectedAsset2, _ := asset2.AssetPayloadToAssetEvent()
 	page := Page{
 		TotalPages:     2,
 		TotalResources: 2,
 	}
 	resp1 := SiteAssetsResponse{
-		Resources: []Asset{{IP: "127.0.0.1", ID: 123}},
+		Resources: []Asset{asset1},
 		Page:      page,
 	}
 	resp2 := SiteAssetsResponse{
-		Resources: []Asset{{IP: "127.0.0.2", ID: 456}},
+		Resources: []Asset{asset2},
 		Page:      page,
 	}
 	respJSON1, _ := json.Marshal(resp1)
@@ -145,26 +150,30 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
-
-	expectedAsset1 := domain.AssetEvent{ID: 1}
-	expectedAsset2 := domain.AssetEvent{ID: 2}
-	expectedAsset3 := domain.AssetEvent{ID: 3}
-	expectedAsset4 := domain.AssetEvent{ID: 4}
-	expectedAsset5 := domain.AssetEvent{ID: 5}
+	asset1 := Asset{IP: "127.0.0.1", ID: 1, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent()
+	asset2 := Asset{IP: "127.0.0.2", ID: 2, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset2, _ := asset1.AssetPayloadToAssetEvent()
+	asset3 := Asset{IP: "127.0.0.3", ID: 3, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset3, _ := asset1.AssetPayloadToAssetEvent()
+	asset4 := Asset{IP: "127.0.0.4", ID: 4, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset4, _ := asset1.AssetPayloadToAssetEvent()
+	asset5 := Asset{IP: "127.0.0.5", ID: 5, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset5, _ := asset1.AssetPayloadToAssetEvent()
 	page := Page{
 		TotalPages:     3,
 		TotalResources: 5,
 	}
 	page1Resp := SiteAssetsResponse{
-		Resources: []Asset{{ID: 1}, {ID: 2}},
+		Resources: []Asset{asset1, asset2},
 		Page:      page,
 	}
 	page2Resp := SiteAssetsResponse{
-		Resources: []Asset{{ID: 3}, {ID: 4}},
+		Resources: []Asset{asset3, asset4},
 		Page:      page,
 	}
 	page3Resp := SiteAssetsResponse{
-		Resources: []Asset{{ID: 5}},
+		Resources: []Asset{asset5},
 		Page:      page,
 	}
 	respJSON1, _ := json.Marshal(page1Resp)
@@ -227,19 +236,22 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 
-	expectedAsset1 := domain.AssetEvent{ID: 1}
-	expectedAsset2 := domain.AssetEvent{ID: 2}
-	expectedAsset3 := domain.AssetEvent{ID: 3}
+	asset1 := Asset{IP: "127.0.0.1", ID: 1, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent()
+	asset2 := Asset{IP: "127.0.0.2", ID: 2, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset2, _ := asset1.AssetPayloadToAssetEvent()
+	asset3 := Asset{IP: "127.0.0.3", ID: 3, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset3, _ := asset1.AssetPayloadToAssetEvent()
 	page := Page{
 		TotalPages:     3,
 		TotalResources: 5,
 	}
 	page1Resp := SiteAssetsResponse{
-		Resources: []Asset{{ID: 1}, {ID: 2}},
+		Resources: []Asset{asset1, asset2},
 		Page:      page,
 	}
 	page3Resp := SiteAssetsResponse{
-		Resources: []Asset{{ID: 3}},
+		Resources: []Asset{asset3},
 		Page:      page,
 	}
 	respJSON1, _ := json.Marshal(page1Resp)
@@ -497,9 +509,9 @@ func TestMakeRequestSuccess(t *testing.T) {
 	mockRT := NewMockRoundTripper(ctrl)
 
 	asset := Asset{
-		IP: "127.0.0.1",
-		ID: 123456,
-	}
+		IP:      "127.0.0.1",
+		ID:      1,
+		History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
 	resp := SiteAssetsResponse{
 		Resources: []Asset{asset},
 		Page:      Page{},
