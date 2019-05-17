@@ -59,8 +59,10 @@ type NexposeAssetFetcher struct {
 	PageSize int
 }
 
-// FetchAssets gets all the assets for a given site ID from Nexpose, with pagination.
-// It returns a channel of assets and a channel of errors that can by asynchronously listened to.
+// FetchAssets gets all the assets for a given site ID from Nexpose. This function is asynchronous, which means
+// you can start listening to the AssetEvent and error channels immediately. Assets will be added to the AssetEvent
+// channel as they're returned from Nexpose and errors will be added to the error channel if there's an error fetching
+// or reading the asset. It's the responsibility of the caller to check if a channel is closed before reading from it.
 func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan domain.AssetEvent, <-chan error) {
 	errChan := make(chan error, 1)
 	defer close(errChan)
