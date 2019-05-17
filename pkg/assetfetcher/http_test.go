@@ -407,7 +407,7 @@ func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
 
-	// An empty Asset will be returned on the channel because we're reading from a close channel here - this is expected
+	// An empty Asset will be returned on the channel because we're reading from a closed channel here - this is expected
 	assert.Equal(t, domain.AssetEvent{}, <-assetChan)
 	assert.Nil(t, <-errChan)
 }
@@ -675,7 +675,7 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	close(assetChan)
 	close(errChan)
 
-	// An empty Asset will be returned on the channel because we're reading from a close channel here - this is expected
+	// An empty Asset will be returned on the channel because we're reading from a closed channel here - this is expected
 	assert.Equal(t, domain.AssetEvent{}, <-assetChan)
 	assert.Nil(t, <-errChan)
 }
