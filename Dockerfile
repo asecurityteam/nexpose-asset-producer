@@ -1,6 +1,8 @@
-FROM golang:latest AS BUILDER
-WORKDIR $GOPATH/src/github.com/asecurityteam/nexpose-asset-producer
-COPY . .
+FROM asecurityteam/sdcli:v1 AS BUILDER
+RUN mkdir -p /go/src/github.com/asecurityteam/nexpose-asset-producer
+WORKDIR /go/src/github.com/asecurityteam/nexpose-asset-producer
+COPY --chown=sdcli:sdcli . .
+RUN sdcli go dep
 RUN CGO_ENABLED=0 GOOS=linux go build -a -o /opt/app main.go
 
 ##################################
