@@ -390,7 +390,7 @@ func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 			TotalPages:     1,
 			TotalResources: 1,
 		},
-		Links: Link{},
+		Links: []Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 
@@ -463,7 +463,7 @@ func TestFetchAssetsAssetPayloadToAssetEventError(t *testing.T) {
 			TotalPages:     1,
 			TotalResources: 1,
 		},
-		Links: Link{},
+		Links: []Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
@@ -516,7 +516,7 @@ func TestMakeRequestSuccess(t *testing.T) {
 	resp := SiteAssetsResponse{
 		Resources: []Asset{asset},
 		Page:      Page{},
-		Links:     Link{},
+		Links:     []Link{},
 	}
 
 	respJSON, _ := json.Marshal(resp)
@@ -613,7 +613,7 @@ func TestMakeRequestWithAssetPayloadToAssetEventError(t *testing.T) {
 	resp := SiteAssetsResponse{
 		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "not a time"}}}},
 		Page:      Page{},
-		Links:     Link{},
+		Links:     []Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
@@ -649,7 +649,7 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	resp := SiteAssetsResponse{
 		Resources: []Asset{},
 		Page:      Page{},
-		Links:     Link{},
+		Links:     []Link{},
 	}
 	respJSON, _ := json.Marshal(resp)
 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{

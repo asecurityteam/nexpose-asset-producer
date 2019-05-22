@@ -26,7 +26,7 @@ const (
 // SiteAssetsResponse is the structure of the Nexpose site assets response
 type SiteAssetsResponse struct {
 	// Hypermedia links to corresponding or related resources
-	Links Link
+	Links []Link
 	// The details of pagination indicating which page was returned, and how the remaining pages can be retrieved.
 	Page Page
 	// The page of resources returned (resources = assets)
