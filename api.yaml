@@ -55,36 +55,36 @@ paths:
       x-transportd:
         backend: app
   /notification:
-      post:
-        description: Get scanned assets and vulnerabilities from last scan for given site and publish them onto an event stream.
-        requestBody:
-          required: true
+    post:
+      description: Get scanned assets and vulnerabilities from last scan for given site and publish them onto an event stream.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScanNotification'
+      responses:
+        "202":
+          description: "Accepted"
+        "400":
+          description: "Invalid input"
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ScanNotification'
-        responses:
-          "202":
-            description: "Accepted"
-          "400":
-            description: "Invalid input"
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Error'
-        x-transportd:
-          backend: app
-          enabled:
-            - "metrics"
-            - "accesslog"
-            - "requestvalidation"
-            - "lambda"
-          lambda:
-            arn: "notification"
-            async: true
-            request: '#! json .Request.Body !#'
-            success: '{"status": 202, "bodyPassthrough": true}'
-            error: '{"status": 500, "bodyPassthrough": true}'
+                $ref: '#/components/schemas/Error'
+      x-transportd:
+        backend: app
+        enabled:
+          - "metrics"
+          - "accesslog"
+          - "requestvalidation"
+          - "lambda"
+        lambda:
+          arn: "notification"
+          async: true
+          request: '#! json .Request.Body !#'
+          success: '{"status": 202, "bodyPassthrough": true}'
+          error: '{"status": 500, "bodyPassthrough": true}'
 components:
   schemas:
     ScanNotification:

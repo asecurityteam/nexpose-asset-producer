@@ -19,9 +19,9 @@ func (c *ProducerConfig) Name() string {
 type ProducerConfigComponent struct{}
 
 // Settings can be used to populate default values if there are any
-func (*ProducerConfigComponent) Settings() *ProducerConfigComponent { return &ProducerConfigComponent{} }
+func (*ProducerConfigComponent) Settings() *ProducerConfig { return &ProducerConfig{} }
 
 // New constructs a NexposeAssetFetcher from a config.
-func (*ProducerConfigComponent) New(_ context.Context, c *ProducerConfigComponent) (*AssetProducer, error) {
+func (*ProducerConfigComponent) New(_ context.Context, c *ProducerConfig) (*AssetProducer, error) {
 	return &AssetProducer{}, nil
 }
