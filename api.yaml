@@ -90,12 +90,12 @@ components:
     ScanNotification:
       type: object
       required:
-        - site_id
+        - siteID
       properties:
-        scan_id:
+        scanID:
           type: string
           description: The Nexpose scan ID for the completed scan.
-        site_id:
+        siteID:
           type: string
           description: The Nexpose site ID for the site that just got scanned.
     Error:
