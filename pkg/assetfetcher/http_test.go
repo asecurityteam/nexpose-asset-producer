@@ -706,8 +706,6 @@ func TestNewNexposeSiteAssetsRequestSuccess(t *testing.T) {
 	host, _ := url.Parse("http://localhost")
 	assetFetcher := &NexposeAssetFetcher{
 		Host:     host,
-		Username: "username",
-		Password: "password",
 		PageSize: 100,
 	}
 	req := assetFetcher.newNexposeSiteAssetsRequest("siteID", 1)
@@ -719,8 +717,6 @@ func TestNewNexposeSiteAssetsRequestWithExtraSlashes(t *testing.T) {
 	host, _ := url.Parse("http://localhost")
 	assetFetcher := &NexposeAssetFetcher{
 		Host:     host,
-		Username: "username",
-		Password: "password",
 		PageSize: 100,
 	}
 	req := assetFetcher.newNexposeSiteAssetsRequest("/siteID/", 1)

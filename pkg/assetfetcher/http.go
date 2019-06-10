@@ -49,10 +49,6 @@ type NexposeAssetFetcher struct {
 	HTTPClient *http.Client
 	// The scheme and host of a Nexpose instance
 	Host *url.URL
-	// The username used to login to the Nexpose instance at the given host
-	Username string
-	// The password for the corresponding username
-	Password string
 	// The number of assets that should be returned at one time
 	PageSize int
 }
@@ -157,9 +153,8 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 	q.Set(pageQueryParam, fmt.Sprint(page))
 	q.Set(sizeQueryParam, fmt.Sprint(c.PageSize))
 	u.RawQuery = q.Encode()
-	req, _ := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 	// the only time http.NewRequest returns an error is if there's a parsing error,
 	// which we already checked for earlier, so no need to check it again
-	req.SetBasicAuth(c.Username, c.Password)
+	req, _ := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 	return req
 }

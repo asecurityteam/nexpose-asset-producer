@@ -16,8 +16,6 @@ func TestAssetComponentDefaultConfig(t *testing.T) {
 	component := &AssetFetcherConfigComponent{}
 	config := component.Settings()
 	assert.Empty(t, config.Host)
-	assert.Empty(t, config.Username)
-	assert.Empty(t, config.Password)
 	assert.Equal(t, config.PageSize, 100)
 }
 
@@ -25,15 +23,11 @@ func TestAssetFetcherConfigWithValues(t *testing.T) {
 	assetFetcherComponent := AssetFetcherConfigComponent{}
 	config := &AssetFetcherConfig{
 		Host:     "http://localhost",
-		Username: "myusername",
-		Password: "mypassword",
 		PageSize: 5,
 	}
 	assetFetcher, err := assetFetcherComponent.New(context.Background(), config)
 
 	assert.Equal(t, "http://localhost", assetFetcher.Host.String())
-	assert.Equal(t, "myusername", assetFetcher.Username)
-	assert.Equal(t, "mypassword", assetFetcher.Password)
 	assert.Equal(t, 5, assetFetcher.PageSize)
 	assert.Nil(t, err)
 }

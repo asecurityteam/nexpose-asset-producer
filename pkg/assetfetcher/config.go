@@ -9,8 +9,6 @@ import (
 // and make a call to the fetch assets API
 type AssetFetcherConfig struct {
 	Host     string `description:"The scheme and host of a Nexpose instance."`
-	Username string `description:"The username used to login to the Nexpose instance at the given host."`
-	Password string `description:"The password for the corresponding username."`
 	PageSize int    `description:"The number of assets that should be returned from the Nexpose API at one time."`
 }
 
@@ -40,8 +38,6 @@ func (*AssetFetcherConfigComponent) New(_ context.Context, c *AssetFetcherConfig
 
 	return &NexposeAssetFetcher{
 		Host:     host,
-		Username: c.Username,
-		Password: c.Password,
 		PageSize: c.PageSize,
 	}, nil
 }

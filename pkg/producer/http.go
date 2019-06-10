@@ -36,7 +36,7 @@ func (p *AssetProducer) Produce(ctx context.Context, asset domain.AssetEvent) er
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set("Content-Type", "application/json")
 	res, err := p.HTTPClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return err
