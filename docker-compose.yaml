@@ -5,33 +5,38 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - SERVERFULL_RUNTIME_HTTPSERVER_ADDRESS=:8081
-      - SERVERFULL_RUNTIME_CONNSTATE_REPORTINTERVAL=5s
-      - SERVERFULL_RUNTIME_CONNSTATE_HIJACKEDCOUNTER=http.server.connstate.hijacked
-      - SERVERFULL_RUNTIME_CONNSTATE_CLOSEDCOUNTER=http.server.connstate.closed
-      - SERVERFULL_RUNTIME_CONNSTATE_IDLEGAUGE=http.server.connstate.idle.gauge
-      - SERVERFULL_RUNTIME_CONNSTATE_IDLECOUNTER=http.server.connstate.idle
-      - SERVERFULL_RUNTIME_CONNSTATE_ACTIVEGAUGE=http.server.connstate.active.gauge
-      - SERVERFULL_RUNTIME_CONNSTATE_ACTIVECOUNTER=http.server.connstate.active
-      - SERVERFULL_RUNTIME_CONNSTATE_NEWGAUGE=http.server.connstate.new.gauge
-      - SERVERFULL_RUNTIME_CONNSTATE_NEWCOUNTER=http.server.connstate.new
-      - SERVERFULL_RUNTIME_LOGGER_OUTPUT=STDOUT
-      - SERVERFULL_RUNTIME_LOGGER_LEVEL=INFO
-      - SERVERFULL_RUNTIME_STATS_OUTPUT=DATADOG
-      - SERVERFULL_RUNTIME_STATS_DATADOG_PACKETSIZE=32768
-      - SERVERFULL_RUNTIME_STATS_DATADOG_TAGS=
-      - SERVERFULL_RUNTIME_STATS_DATADOG_FLUSHINTERVAL=10s
-      - SERVERFULL_RUNTIME_STATS_DATADOG_ADDRESS=statsd:8126
-      - SERVERFULL_RUNTIME_SIGNALS_INSTALLED=OS
-      - SERVERFULL_RUNTIME_SIGNALS_OS_SIGNALS=15 2
-      - NEXPOSE_HOST
-      - NEXPOSE_USERNAME
-      - NEXPOSE_PASSWORD
-      - NEXPOSE_PAGESIZE
-      - PRODUCER_ENDPOINT
-  gateway:
+      SERVERFULL_RUNTIME_HTTPSERVER_ADDRESS: :8081
+      SERVERFULL_RUNTIME_CONNSTATE_REPORTINTERVAL: 5s
+      SERVERFULL_RUNTIME_CONNSTATE_HIJACKEDCOUNTER: http.server.connstate.hijacked
+      SERVERFULL_RUNTIME_CONNSTATE_CLOSEDCOUNTER: http.server.connstate.closed
+      SERVERFULL_RUNTIME_CONNSTATE_IDLEGAUGE: http.server.connstate.idle.gauge
+      SERVERFULL_RUNTIME_CONNSTATE_IDLECOUNTER: http.server.connstate.idle
+      SERVERFULL_RUNTIME_CONNSTATE_ACTIVEGAUGE: http.server.connstate.active.gauge
+      SERVERFULL_RUNTIME_CONNSTATE_ACTIVECOUNTER: http.server.connstate.active
+      SERVERFULL_RUNTIME_CONNSTATE_NEWGAUGE: http.server.connstate.new.gauge
+      SERVERFULL_RUNTIME_CONNSTATE_NEWCOUNTER: http.server.connstate.new
+      SERVERFULL_RUNTIME_LOGGER_OUTPUT: STDOUT
+      SERVERFULL_RUNTIME_LOGGER_LEVEL: INFO
+      SERVERFULL_RUNTIME_STATS_OUTPUT: NULL
+      SERVERFULL_RUNTIME_SIGNALS_INSTALLED: OS
+      SERVERFULL_RUNTIME_SIGNALS_OS_SIGNALS: 15 2
+      NEXPOSE_HOST: http://gateway-outbound:8082
+      NEXPOSE_PAGESIZE: 100
+      HTTPPRODUCER_ENDPOINT: http://gateway-outbound:8082/publish
+  gateway-inbound:
     build:
       context: .
-      dockerfile: gateway.Dockerfile
+      dockerfile: gateway-inbound.Dockerfile
     ports:
       - "8080:8080"
+  gateway-outbound:
+    build:
+      context: .
+      dockerfile: gateway-outbound.Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      NEXPOSE_API_HOST:
+      NEXPOSE_API_USERNAME:
+      NEXPOSE_API_PASSWORD:
+      HTTPPRODUCER_API_HOST:

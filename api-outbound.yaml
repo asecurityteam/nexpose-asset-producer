@@ -1,0 +1,264 @@
+openapi: 3.0.0
+x-runtime:
+  httpserver:
+    address: ":8082"
+  logger:
+    level: "INFO"
+    output: "STDOUT"
+  stats:
+    output: "NULL"
+  signals:
+    installed:
+      - "OS"
+    os:
+      signals:
+        - 2 # SIGINT
+        - 15 # SIGTERM
+  connstate:
+    reportinterval: "5s"
+    hijackedcounter: "http.server.connstate.hijacked"
+    closedcounter: "http.server.connstate.closed"
+    idlegauge: "http.server.connstate.idle.gauge"
+    idlecounter: "http.server.connstate.idle"
+    activegauge: "http.server.connstate.active.gauge"
+    activecounter: "http.server.connstate.active"
+    newgauge: "http.server.connstate.new.gauge"
+    newcounter: "http.server.connstate.new"
+x-transportd:
+  backends:
+    - nexpose
+    - queue
+  nexpose:
+    host: "${NEXPOSE_API_HOST}"
+    pool:
+      ttl: "15m"
+      count: 1
+  queue:
+    host: "${HTTPPRODUCER_API_HOST}"
+    pool:
+      ttl: "15m"
+      count: 1
+info:
+  version: 1.0.0
+  title: "nexpose-asset-producer"
+  description: "Collection of external APIs used by the Nexpose Asset Producer service"
+  contact:
+    name: Security Development
+    email: secdev-external@atlassian.com
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+paths:
+  /api/3/sites/{siteID}/assets:
+    get:
+      description: Nexpose API for retrieving paged assets linked with the specified site.
+      parameters:
+        - name: siteID
+          in: path
+          description: The identifier of the site.
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: "The index of the page (zero-based) to retrieve."
+          required: false
+          schema:
+            type: integer
+        - name: size
+          in: query
+          description: "The number of records per page to retrieve."
+          required: false
+          schema:
+            type: integer
+      responses:
+        200:
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NexposeResponse'
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NexposeError'
+        404:
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NexposeError'
+      x-transportd:
+        backend: nexpose
+        enabled:
+          - "accesslog"
+          - "requestvalidation"
+          - "responsevalidation"
+          - "timeout"
+          - "retry"
+          - "basicauth"
+        timeout:
+          after: "2s"
+        retry:
+          backoff: "50ms"
+          limit: 3
+          codes:
+            - 500
+            - 501
+            - 502
+            - 503
+            - 504
+            - 505
+            - 506
+            - 507
+            - 508
+            - 509
+            - 510
+            - 511
+        basicauth:
+          username: "${NEXPOSE_API_USERNAME}"
+          password: "${NEXPOSE_API_PASSWORD}"
+  /publish:
+    post:
+      description: Publish an asset event to an HTTP queue.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssetEvent'
+      responses:
+        "200":
+          description: "Success"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      x-transportd:
+        backend: queue
+        enabled:
+          - "accesslog"
+          - "requestvalidation"
+          - "timeout"
+          - "retry"
+        timeout:
+          after: "2s"
+        retry:
+          backoff: "50ms"
+          limit: 3
+          codes:
+            - 500
+            - 501
+            - 502
+            - 503
+            - 504
+            - 505
+            - 506
+            - 507
+            - 508
+            - 509
+            - 510
+            - 511
+components:
+  schemas:
+    NexposeResponse:
+      type: object
+      required:
+        - page
+        - resources
+      properties:
+        page:
+          $ref: '#/components/schemas/NexposePage'
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/NexposeAssetResource'
+    NexposePage:
+      type: object
+      description: The details of pagination from the Nexpose API.
+      properties:
+        number:
+          type: integer
+          description: The index (zero-based) of the current page returned.
+        size:
+          type: integer
+          description: The maximum size of the page returned.
+        totalPages:
+          type: integer
+          description: The total number of pages available.
+        totalResources:
+          type: integer
+          description: The total number of resources available across all pages.
+    NexposeAssetResource:
+      type: object
+      description: A single asset returned from the Nexpose API.
+      properties:
+        id:
+          type: integer
+          description: The identifier of the asset.
+        history:
+          type: array
+          description: The history of changes to the asset over time.
+          items:
+            $ref: '#/components/schemas/NexposeAssetHistory'
+        hostName:
+          type: string
+          description: The primary host name (local or FQDN) of the asset.
+        ip:
+          type: string
+          description: The primary IPv4 or IPv6 address of the asset.
+    NexposeAssetHistory:
+      type: object
+      description: The history of changes to the asset over time.
+      properties:
+        type:
+          type: string
+          description: The type of change.
+        date:
+          type: string
+          format: date-time
+          description: The date the asset information was collected or changed.
+    NexposeError:
+      type: object
+      properties:
+        status:
+          type: string
+          description: The HTTP status code for the error (same as in the HTTP response).
+        message:
+          type: string
+          description: The messages indicating the cause or reason for failure.
+    AssetEvent:
+      type: object
+      required:
+        - lastScanned
+        - id
+        - ip
+      properties:
+        lastScanned:
+          type: string
+          format: date-time
+          description: The last time the asset was scanned in ISO8601 format.
+        hostName:
+          type: string
+          description: The primary host name (local or FQDN) of the asset.
+        id:
+          type: string
+          description: The Nexpose identifier of the asset.
+        ip:
+          type: string
+          description: The primary IPv4 or IPv6 address of the asset.
+    Error:
+      type: object
+      properties:
+        errorMessage:
+          type: string
+        errorType:
+          type: string
+        stackTrace:
+          type: array
+          items:
+            type: string
