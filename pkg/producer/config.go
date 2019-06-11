@@ -1,11 +1,14 @@
 package producer
 
-import "context"
+import (
+	"context"
+	"net/url"
+)
 
 // ProducerConfig holds configuration required to send Nexpose assets
 // to a queue via an HTTP Producer
 type ProducerConfig struct {
-	Endpoint string
+	Endpoint string `description:"The scheme and URL of an HTTP producer."`
 }
 
 // Name is used by the settings library and will add a "HTTPPRODUCER"
@@ -21,7 +24,12 @@ type ProducerConfigComponent struct{}
 // Settings can be used to populate default values if there are any
 func (*ProducerConfigComponent) Settings() *ProducerConfig { return &ProducerConfig{} }
 
-// New constructs a NexposeAssetFetcher from a config.
+// New constructs a AssetProducer from a config.
 func (*ProducerConfigComponent) New(_ context.Context, c *ProducerConfig) (*AssetProducer, error) {
-	return &AssetProducer{}, nil
+	endpoint, err := url.Parse(c.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return &AssetProducer{Endpoint: endpoint}, nil
 }
