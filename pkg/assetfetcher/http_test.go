@@ -681,7 +681,8 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 	mockRT := NewMockRoundTripper(ctrl)
 
 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-		Body: ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
+		StatusCode: http.StatusOK,
 	}, nil)
 
 	host, _ := url.Parse("http://localhost")
@@ -700,6 +701,34 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
 
 	assert.IsType(t, &ErrorParsingJSONResponse{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
+}
+
+func TestMakeRequestWithNotOKStatus(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
+		StatusCode: http.StatusBadRequest,
+	}, nil)
+
+	host, _ := url.Parse("http://localhost")
+	nexposeAssetFetcher := &NexposeAssetFetcher{
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       host,
+	}
+
+	var wg sync.WaitGroup
+	assetChan := make(chan domain.AssetEvent, 1)
+	errChan := make(chan error, 1)
+	defer close(assetChan)
+	defer close(errChan)
+
+	wg.Add(1)
+	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+
+	assert.IsType(t, &ErrorFetchingAssets{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
 }
 
 func TestNewNexposeSiteAssetsRequestSuccess(t *testing.T) {

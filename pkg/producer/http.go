@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
@@ -13,7 +16,7 @@ import (
 // AssetProducer holds streaming appliance configuration
 type AssetProducer struct {
 	HTTPClient *http.Client
-	Endpoint   string
+	Endpoint   *url.URL
 }
 
 type assetEventPayload struct {
@@ -32,15 +35,22 @@ func (p *AssetProducer) Produce(ctx context.Context, asset domain.AssetEvent) er
 		IP:          asset.IP,
 	}
 	body, _ := json.Marshal(payload)
-	req, err := http.NewRequest(http.MethodPost, p.Endpoint, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
+	req, _ := http.NewRequest(http.MethodPost, p.Endpoint.String(), bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	res, err := p.HTTPClient.Do(req.WithContext(ctx))
 	if err != nil {
 		return err
 	}
 	defer res.Body.Close()
+
+	resBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected response from http producer: %d %s",
+			res.StatusCode, string(resBody))
+	}
 	return nil
 }
