@@ -82,3 +82,14 @@ type MissingRequiredFields struct {
 func (e *MissingRequiredFields) Error() string {
 	return fmt.Sprintf("Required fields are missing. ID: %v, IP: %s, LastScanned: %v", e.AssetID, e.AssetIP, e.AssetLastScanned)
 }
+
+// AssetNotScanned represents an error when the asset being checked has never been scanned
+type AssetNotScanned struct {
+	AssetID int64
+	AssetIP string
+}
+
+// Error prints a useful message indicating why an asset scan report will not be produced
+func (e *AssetNotScanned) Error() string {
+	return fmt.Sprintf("This Nexpose asset has never been scanned, so no scan report can be produced. ID: %v, IP: %s", e.AssetID, e.AssetIP)
+}

@@ -4,6 +4,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    depends_on: 
+      - gateway-inbound
+      - gateway-outbound
     environment:
       SERVERFULL_RUNTIME_HTTPSERVER_ADDRESS: :8081
       SERVERFULL_RUNTIME_CONNSTATE_REPORTINTERVAL: 5s
