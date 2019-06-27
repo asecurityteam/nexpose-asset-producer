@@ -24,37 +24,42 @@ func TestAssetFetcherErrors(t *testing.T) {
 		{
 			"URLParsingError",
 			&URLParsingError{customError, nexposeTestURL},
-			fmt.Sprintf("Error parsing Nexpose URL (%v): %v", nexposeTestURL, customError),
+			fmt.Sprintf("error parsing Nexpose URL (%v): %v", nexposeTestURL, customError),
 		},
 		{
 			"ErrorParsingJSONResponse",
 			&ErrorParsingJSONResponse{customError, nexposeTestURL},
-			fmt.Sprintf("Error parsing Nexpose response from %v: %v", nexposeTestURL, customError),
+			fmt.Sprintf("error parsing Nexpose response from %v: %v", nexposeTestURL, customError),
 		},
 		{
 			"ErrorReadingNexposeResponse",
 			&ErrorReadingNexposeResponse{customError, nexposeTestURL},
-			fmt.Sprintf("Error reading Nexpose response from %v: %v", nexposeTestURL, customError),
+			fmt.Sprintf("error reading Nexpose response from %v: %v", nexposeTestURL, customError),
 		},
 		{
 			"NexposeHTTPRequestError",
 			&NexposeHTTPRequestError{customError, nexposeTestURL},
-			fmt.Sprintf("Error making an HTTP request to Nexpose with URL %v: %v", nexposeTestURL, customError),
+			fmt.Sprintf("error making an HTTP request to Nexpose with URL %v: %v", nexposeTestURL, customError),
 		},
 		{
 			"ErrorFetchingAssets",
 			&ErrorFetchingAssets{customError},
-			fmt.Sprintf("Error fetching assets from Nexpose %v", customError),
+			fmt.Sprintf("error fetching assets from Nexpose %v", customError),
 		},
 		{
 			"ErrorConvertingAssetPayload",
 			&ErrorConvertingAssetPayload{123456, customError},
-			fmt.Sprintf("Error converting asset 123456 payload to event %v", customError),
+			fmt.Sprintf("error converting asset 123456 payload to event %v", customError),
 		},
 		{
 			"MissingRequiredFields",
 			&MissingRequiredFields{123456, "", lastScannedNow},
-			fmt.Sprintf("Required fields are missing. ID: 123456, IP: , LastScanned: %v", lastScannedNow),
+			fmt.Sprintf("required fields are missing. ID: 123456, IP: , LastScanned: %v", lastScannedNow),
+		},
+		{
+			"AssetNotScanned",
+			&AssetNotScanned{123456, "abc"},
+			fmt.Sprintf("this Nexpose asset has never been scanned, so no scan report can be produced. ID: %v, IP: %s", 123456, "abc"),
 		},
 	}
 
