@@ -333,7 +333,7 @@ func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 type assetHistoryEvents []AssetHistory
 
 func (a assetHistoryEvents) lastScannedTimestamp() (time.Time, error) {
-	latestTime := time.Time{} // empty struct
+	var latestTime time.Time
 	for _, evt := range a {
 		if evt.Type == "SCAN" {
 			t, err := time.Parse(time.RFC3339, evt.Date)
