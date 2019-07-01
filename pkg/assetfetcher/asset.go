@@ -316,8 +316,11 @@ func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 	if err != nil {
 		return domain.AssetEvent{}, err
 	}
-	if a.ID == 0 || a.IP == "" || lastScanned.IsZero() {
+	if a.ID == 0 || a.IP == "" {
 		return domain.AssetEvent{}, &MissingRequiredFields{a.ID, a.IP, lastScanned}
+	}
+	if lastScanned.IsZero() { // this Asset (aka "resource" in Nexpose terminology) has never been scanned
+		return domain.AssetEvent{}, &AssetNotScanned{a.ID, a.IP}
 	}
 	return domain.AssetEvent{
 		ID:          a.ID,
@@ -330,7 +333,7 @@ func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 type assetHistoryEvents []AssetHistory
 
 func (a assetHistoryEvents) lastScannedTimestamp() (time.Time, error) {
-	latestTime := time.Time{}
+	var latestTime time.Time
 	for _, evt := range a {
 		if evt.Type == "SCAN" {
 			t, err := time.Parse(time.RFC3339, evt.Date)
@@ -342,5 +345,9 @@ func (a assetHistoryEvents) lastScannedTimestamp() (time.Time, error) {
 			}
 		}
 	}
+	// in such a case where the history array of a Nexpose resource lacks any history
+	// elements with a value of "SCAN" for "type", an empty Time struct is intentionally
+	// returned and should be considered by the function caller as the indicator that no
+	// Nexpose scan has been run against this resource
 	return latestTime, nil
 }

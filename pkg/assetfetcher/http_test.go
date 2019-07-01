@@ -600,7 +600,7 @@ func TestMakeRequestHTTPError(t *testing.T) {
 
 	err := <-errChan
 	assert.IsType(t, &NexposeHTTPRequestError{}, err)
-	assert.Contains(t, err.Error(), "Error making an HTTP request to Nexpose with URL http://localhost/api/3/sites/siteID/assets?page=100&size=100:")
+	assert.Contains(t, err.Error(), "error making an HTTP request to Nexpose with URL http://localhost/api/3/sites/siteID/assets?page=100&size=100:")
 }
 
 func TestMakeRequestWithAssetPayloadToAssetEventError(t *testing.T) {

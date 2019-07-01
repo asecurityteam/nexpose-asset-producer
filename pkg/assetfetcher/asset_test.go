@@ -95,13 +95,6 @@ func TestAssetPayloadToAssetEventError(t *testing.T) {
 				History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}},
 			},
 		},
-		{
-			"No LastScanned",
-			Asset{
-				ID: 1,
-				IP: "127.0.0.1",
-			},
-		},
 	}
 
 	for _, test := range tests {
@@ -109,6 +102,37 @@ func TestAssetPayloadToAssetEventError(t *testing.T) {
 			_, err := test.asset.AssetPayloadToAssetEvent()
 			lastScanned, _ := test.asset.History.lastScannedTimestamp()
 			assert.Equal(t, &MissingRequiredFields{test.asset.ID, test.asset.IP, lastScanned}, err)
+
+		})
+	}
+}
+
+func TestAssetPayloadToAssetEventErrorNeverBeenScanned(t *testing.T) {
+	tests := []struct {
+		name  string
+		asset Asset
+	}{
+		{
+			"No LastScanned",
+			Asset{
+				ID: 1,
+				IP: "127.0.0.1",
+			},
+		},
+		{
+			"Never been scanned",
+			Asset{
+				ID:      1,
+				IP:      "127.0.0.1",
+				History: assetHistoryEvents{AssetHistory{Type: "ASSET-IMPORT", Date: "2019-04-22T15:02:44.000Z"}},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(tt *testing.T) {
+			_, err := test.asset.AssetPayloadToAssetEvent()
+			assert.Equal(t, &AssetNotScanned{test.asset.ID, test.asset.IP}, err)
 
 		})
 	}
