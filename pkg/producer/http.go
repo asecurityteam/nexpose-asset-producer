@@ -21,7 +21,7 @@ type AssetProducer struct {
 
 type assetEventPayload struct {
 	LastScanned time.Time `json:"lastScanned,omitempty"`
-	Hostname    string    `json:"hostName,omitempty"`
+	Hostname    string    `json:"hostname,omitempty"`
 	ID          int64     `json:"id,omitempty"`
 	IP          string    `json:"ip,omitempty"`
 }

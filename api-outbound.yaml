@@ -242,7 +242,7 @@ components:
           type: string
           format: date-time
           description: The last time the asset was scanned in ISO8601 format.
-        hostName:
+        hostname:
           type: string
           description: The primary host name (local or FQDN) of the asset.
         id:
