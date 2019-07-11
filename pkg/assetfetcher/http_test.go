@@ -73,6 +73,61 @@ func TestFetchAssetsSuccess(t *testing.T) {
 	assert.Equal(t, expectedAsset, actualAsset)
 }
 
+func TestFetchAssetsSuccessNoScans(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+	asset := Asset{
+		IP: "127.0.0.1",
+		ID: 123456,
+		// this asset has never been scanned, so no SCAN Type exists in the assetHistoryEvents array
+		History: assetHistoryEvents{AssetHistory{Type: "CREATE", Date: "2019-05-14T15:03:47.000Z"}},
+	}
+
+	resp := SiteAssetsResponse{
+		Resources: []Asset{asset},
+		Page: Page{
+			TotalPages:     1,
+			TotalResources: 1,
+		},
+	}
+	respJSON, _ := json.Marshal(resp)
+	respReader := bytes.NewReader(respJSON)
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(respReader),
+		StatusCode: http.StatusOK,
+	}, nil)
+
+	host, _ := url.Parse("http://localhost")
+	nexposeAssetFetcher := &NexposeAssetFetcher{
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       host,
+		PageSize:   100,
+	}
+
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+
+	for {
+		select {
+		case _, ok := <-assetChan:
+			if !ok {
+				assetChan = nil
+			} else {
+				t.Fatal("Nothing should have been produced into the assetChan channel")
+			}
+		case _, ok := <-errChan:
+			if !ok {
+				errChan = nil
+			} else {
+				t.Fatal("Nothing should have been produced into the assetChan channel")
+			}
+		}
+		if assetChan == nil && errChan == nil {
+			break
+		}
+	}
+}
+
 func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

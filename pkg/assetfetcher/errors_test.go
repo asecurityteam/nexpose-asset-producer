@@ -56,11 +56,6 @@ func TestAssetFetcherErrors(t *testing.T) {
 			&MissingRequiredFields{123456, "", lastScannedNow},
 			fmt.Sprintf("required fields are missing. ID: 123456, IP: , LastScanned: %v", lastScannedNow),
 		},
-		{
-			"AssetNotScanned",
-			&AssetNotScanned{123456, "abc"},
-			fmt.Sprintf("this Nexpose asset has never been scanned, so no scan report can be produced. ID: %v, IP: %s", 123456, "abc"),
-		},
 	}
 
 	for _, tt := range tc {

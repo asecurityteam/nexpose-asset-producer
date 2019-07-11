@@ -88,6 +88,10 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	pagedErrChan := make(chan error, siteAssetResp.Page.TotalResources)
 
 	for _, asset := range siteAssetResp.Resources {
+		if !asset.hasBeenScanned() {
+			// no need to continue processing a Nexpose Asset that has never been scanned
+			continue
+		}
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
 			pagedErrChan <- &ErrorConvertingAssetPayload{asset.ID, err}
@@ -163,4 +167,13 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 	// which we already checked for earlier, so no need to check it again
 	req, _ := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 	return req
+}
+
+func (a Asset) hasBeenScanned() bool {
+	for _, evt := range a.History {
+		if evt.Type == "SCAN" {
+			return true
+		}
+	}
+	return false
 }
