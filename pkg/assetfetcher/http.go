@@ -51,7 +51,8 @@ type NexposeAssetFetcher struct {
 	Host *url.URL
 	// The number of assets that should be returned at one time
 	PageSize int
-	StatFn   domain.StatFn
+	// Stat Function to report custom statistics
+	StatFn domain.StatFn
 }
 
 // FetchAssets gets all the assets for a given site ID from Nexpose. This function is asynchronous, which means
