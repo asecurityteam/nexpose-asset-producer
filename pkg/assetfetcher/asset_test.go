@@ -131,9 +131,12 @@ func TestAssetPayloadToAssetEventErrorNeverBeenScanned(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
+			// per the AssetPayloadToAssetEvent docs, callers should only call the function
+			// when the Asset can be cleanly mapped.  The two test structs cannot, but this
+			// test remains to ensure the function handles such a case appropriately
 			_, err := test.asset.AssetPayloadToAssetEvent()
-			assert.Equal(t, &AssetNotScanned{test.asset.ID, test.asset.IP}, err)
-
+			var lastScanned time.Time // intentionally empty
+			assert.Equal(t, &MissingRequiredFields{test.asset.ID, test.asset.IP, lastScanned}, err)
 		})
 	}
 }

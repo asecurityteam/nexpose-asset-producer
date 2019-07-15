@@ -51,6 +51,8 @@ type NexposeAssetFetcher struct {
 	Host *url.URL
 	// The number of assets that should be returned at one time
 	PageSize int
+	// Stat Function to report custom statistics
+	StatFn domain.StatFn
 }
 
 // FetchAssets gets all the assets for a given site ID from Nexpose. This function is asynchronous, which means
@@ -60,6 +62,8 @@ type NexposeAssetFetcher struct {
 func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan domain.AssetEvent, <-chan error) {
 	errChan := make(chan error, 1)
 	defer close(errChan)
+
+	stater := c.StatFn(ctx)
 
 	// have to page through to get all the assets, start with page 0
 	// make the first call to Nexpose to get the total number of pages we'll
@@ -88,6 +92,11 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	pagedErrChan := make(chan error, siteAssetResp.Page.TotalResources)
 
 	for _, asset := range siteAssetResp.Resources {
+		if !asset.hasBeenScanned() {
+			// no need to continue processing a Nexpose Asset that has never been scanned
+			stater.Count("assetreceived.skipped", 1)
+			continue
+		}
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
 			pagedErrChan <- &ErrorConvertingAssetPayload{asset.ID, err}
@@ -163,4 +172,13 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 	// which we already checked for earlier, so no need to check it again
 	req, _ := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 	return req
+}
+
+func (a Asset) hasBeenScanned() bool {
+	for _, evt := range a.History {
+		if evt.Type == "SCAN" {
+			return true
+		}
+	}
+	return false
 }

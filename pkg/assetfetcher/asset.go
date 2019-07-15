@@ -310,17 +310,16 @@ type VulnerabilitySummary struct {
 }
 
 // AssetPayloadToAssetEvent translates a Nexpose Asset API response payload
-// into an AssetEvent for downstream services
+// into an AssetEvent for downstream services.  Callers of this function are
+// expected to pass an Asset that cleanly maps to AssetEvent, meaning the
+// event must have a timestamp (because without one, it's not an event!)
 func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 	lastScanned, err := a.History.lastScannedTimestamp()
 	if err != nil {
 		return domain.AssetEvent{}, err
 	}
-	if a.ID == 0 || a.IP == "" {
+	if a.ID == 0 || a.IP == "" || lastScanned.IsZero() {
 		return domain.AssetEvent{}, &MissingRequiredFields{a.ID, a.IP, lastScanned}
-	}
-	if lastScanned.IsZero() { // this Asset (aka "resource" in Nexpose terminology) has never been scanned
-		return domain.AssetEvent{}, &AssetNotScanned{a.ID, a.IP}
 	}
 	return domain.AssetEvent{
 		ID:          a.ID,
@@ -347,7 +346,6 @@ func (a assetHistoryEvents) lastScannedTimestamp() (time.Time, error) {
 	}
 	// in such a case where the history array of a Nexpose resource lacks any history
 	// elements with a value of "SCAN" for "type", an empty Time struct is intentionally
-	// returned and should be considered by the function caller as the indicator that no
-	// Nexpose scan has been run against this resource
+	// returned
 	return latestTime, nil
 }
