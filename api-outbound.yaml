@@ -128,8 +128,8 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                # an asset needs either a hostname OR an IP
+              anyOf:
+                # an asset needs either a hostname OR an IP (or both)
                 - $ref: '#/components/schemas/AssetEventWithIP'
                 - $ref: '#/components/schemas/AssetEventWithHostname'
       responses:
@@ -245,15 +245,12 @@ components:
           type: string
           format: date-time
           description: The last time the asset was scanned in ISO8601 format.
-        hostname:
-          type: string
-          description: The primary host name (local or FQDN) of the asset.
         id:
           type: string
           description: The Nexpose identifier of the asset.
-        ip:
+        hostname:
           type: string
-          description: The primary IPv4 or IPv6 address of the asset.
+          description: The primary host name (local or FQDN) of the asset.
     AssetEventWithIP:
       type: object
       required:
@@ -265,9 +262,6 @@ components:
           type: string
           format: date-time
           description: The last time the asset was scanned in ISO8601 format.
-        hostname:
-          type: string
-          description: The primary host name (local or FQDN) of the asset.
         id:
           type: string
           description: The Nexpose identifier of the asset.
