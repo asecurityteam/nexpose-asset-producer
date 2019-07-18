@@ -128,7 +128,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AssetEvent'
+              oneOf:
+                # an asset needs either a hostname OR an IP
+                - $ref: '#/components/schemas/AssetEventWithIP'
+                - $ref: '#/components/schemas/AssetEventWithHostname'
       responses:
         "200":
           description: "Success"
@@ -231,7 +234,27 @@ components:
         message:
           type: string
           description: The messages indicating the cause or reason for failure.
-    AssetEvent:
+    AssetEventWithHostname:
+      type: object
+      required:
+        - lastScanned
+        - id
+        - hostname
+      properties:
+        lastScanned:
+          type: string
+          format: date-time
+          description: The last time the asset was scanned in ISO8601 format.
+        hostname:
+          type: string
+          description: The primary host name (local or FQDN) of the asset.
+        id:
+          type: string
+          description: The Nexpose identifier of the asset.
+        ip:
+          type: string
+          description: The primary IPv4 or IPv6 address of the asset.
+    AssetEventWithIP:
       type: object
       required:
         - lastScanned
