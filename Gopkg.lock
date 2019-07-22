@@ -2,6 +2,46 @@
 
 
 [[projects]]
+  digest = "1:6cbbc75cfbe13f5b3ee14c0395ba218144c8f72dc9d610057692c107e40fbab4"
+  name = "github.com/asecurityteam/component-connstate"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e8371614dbdbf67c13cb416c6b7366b0b4570bc4"
+  version = "v0.1.0"
+
+[[projects]]
+  digest = "1:50b6054c3166cb1490af953aca2fe787549c571072e90fb8977a063ca90c8883"
+  name = "github.com/asecurityteam/component-expvar"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bf0d7879cb8dec94476c3861de4363767fa6e5f0"
+  version = "v0.1.0"
+
+[[projects]]
+  digest = "1:2e65af6319735cecabb4fd33ad796b04929c5656667f2f94cdeda25535d81b59"
+  name = "github.com/asecurityteam/component-log"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2a66e99dd017ee4200bb1483570af727995e6c5d"
+  version = "v0.1.0"
+
+[[projects]]
+  digest = "1:79c187e5b848602e1ab00b6bf1bc4b36b30b580cf3050590da6437caaffe6ec9"
+  name = "github.com/asecurityteam/component-signals"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0d15bff7d1c866f9982eb1e70f84c5e4ef8e4854"
+  version = "v0.1.0"
+
+[[projects]]
+  digest = "1:535f5aab9d8b2a9451d81673b6bcdb342a304fb8de506a11b08ae0fe0e7f24f7"
+  name = "github.com/asecurityteam/component-stat"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "4175403694f83e388be7d0f20404aee8cbb64916"
+  version = "v0.1.0"
+
+[[projects]]
   digest = "1:ffadaa3e19072a02b4727002937b7a677973f2eed0a89b4a8c750576339bbaa5"
   name = "github.com/asecurityteam/logevent"
   packages = [
@@ -13,20 +53,20 @@
   version = "1.0.4"
 
 [[projects]]
-  branch = "master"
-  digest = "1:fe321de7854c65af149fe7c66a7ed3ad82046902536e1aa41ec509f5fb942426"
+  digest = "1:07e44ec48d802cb92f337bfd3312aaced8d915a9934b60328f56a027c94138b7"
   name = "github.com/asecurityteam/runhttp"
   packages = ["."]
   pruneopts = "UT"
-  revision = "60620809c4931ced5fde6400c2462236cf3e9c16"
+  revision = "d57832e45684af266e155f7d068b1212cb6e7eda"
+  version = "v0.2.0"
 
 [[projects]]
-  digest = "1:321179397232e455f894e9d717a268be93bb731f75566e24ea3b41ab63ec0127"
+  digest = "1:a6062fd35f5a3e0fcb48b365f343f6cd87991e039510bedf4a30007ec2f436dc"
   name = "github.com/asecurityteam/serverfull"
   packages = ["."]
   pruneopts = "UT"
-  revision = "46aa99d9f50faaf4faab8909e4000c70ee133936"
-  version = "v0.1.0"
+  revision = "b2396b0e00cb1a57eb4f78b468ff9cf80d14e2c0"
+  version = "v0.4.0"
 
 [[projects]]
   branch = "master"
@@ -37,7 +77,7 @@
   revision = "d4142d59861b3779aeba32111096d43ae940e49d"
 
 [[projects]]
-  digest = "1:fc53fe55ee530de09a7593d102a4aae9df3fa085abeb9fbd41becc6d56e335f2"
+  digest = "1:019196f2ac870c197938d739cf0cdd4b78a39dc5c533021ed39899e390d34cd7"
   name = "github.com/aws/aws-lambda-go"
   packages = [
     "lambda",
@@ -46,8 +86,8 @@
     "lambdacontext",
   ]
   pruneopts = "UT"
-  revision = "08d251dc58f204411d79012fd6f1beefb7107fea"
-  version = "v1.10.0"
+  revision = "4c210d7623089d36b6bb6febf5a5e553bf73fbfb"
+  version = "v1.11.1"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -85,12 +125,12 @@
   version = "v2.2.2"
 
 [[projects]]
-  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
+  digest = "1:be408f349cae090a7c17a279633d6e62b00068e64af66a582cae0983de8890ea"
   name = "github.com/golang/mock"
   packages = ["gomock"]
   pruneopts = "UT"
-  revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
-  version = "v1.2.0"
+  revision = "9fa652df1129bef0e734c9cf9bf6dbae9ef3b9fa"
+  version = "1.3.1"
 
 [[projects]]
   digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
@@ -128,7 +168,7 @@
   revision = "c67367528e160e557423e4d87059614d8c31a582"
 
 [[projects]]
-  digest = "1:772057e3c30cb5bee83fb0ff67b9255f9d9aa551f500ed85c103e68b4ed02112"
+  digest = "1:ff8c32bee60523e39cd04e58b14fae0c3d6adcbc419e9e0c3d991af0390ab270"
   name = "github.com/rs/zerolog"
   packages = [
     ".",
@@ -136,8 +176,8 @@
     "internal/json",
   ]
   pruneopts = "UT"
-  revision = "651d361cfeb9d0f5b9f1d14b162c66c82509ef6d"
-  version = "v1.13.0"
+  revision = "acf3980132bfcdc48638724e6e3d9e5749b85999"
+  version = "v1.14.3"
 
 [[projects]]
   digest = "1:08d65904057412fc0270fc4812a1c90c594186819243160dc779a402d4b6d0bc"
@@ -164,7 +204,7 @@
   name = "golang.org/x/net"
   packages = ["context"]
   pruneopts = "UT"
-  revision = "addf6b3196f61cd44ce5a76657913698c73479d0"
+  revision = "da137c7871d730100384dbcf36e6f8fa493aef5b"
 
 [solve-meta]
   analyzer-name = "dep"
