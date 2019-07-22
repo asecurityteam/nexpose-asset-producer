@@ -89,9 +89,8 @@ func TestAssetPayloadToAssetEventError(t *testing.T) {
 			},
 		},
 		{
-			"No IP",
+			"No IP or Hostname",
 			Asset{
-				ID:      1,
 				History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}},
 			},
 		},
@@ -101,7 +100,7 @@ func TestAssetPayloadToAssetEventError(t *testing.T) {
 		t.Run(test.name, func(tt *testing.T) {
 			_, err := test.asset.AssetPayloadToAssetEvent()
 			lastScanned, _ := test.asset.History.lastScannedTimestamp()
-			assert.Equal(t, &MissingRequiredFields{test.asset.ID, test.asset.IP, lastScanned}, err)
+			assert.Equal(t, &MissingRequiredFields{test.asset.ID, test.asset.IP, test.asset.HostName, lastScanned}, err)
 
 		})
 	}
@@ -136,7 +135,7 @@ func TestAssetPayloadToAssetEventErrorNeverBeenScanned(t *testing.T) {
 			// test remains to ensure the function handles such a case appropriately
 			_, err := test.asset.AssetPayloadToAssetEvent()
 			var lastScanned time.Time // intentionally empty
-			assert.Equal(t, &MissingRequiredFields{test.asset.ID, test.asset.IP, lastScanned}, err)
+			assert.Equal(t, &MissingRequiredFields{test.asset.ID, test.asset.IP, test.asset.HostName, lastScanned}, err)
 		})
 	}
 }

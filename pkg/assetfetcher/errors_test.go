@@ -53,8 +53,8 @@ func TestAssetFetcherErrors(t *testing.T) {
 		},
 		{
 			"MissingRequiredFields",
-			&MissingRequiredFields{123456, "", lastScannedNow},
-			fmt.Sprintf("required fields are missing. ID: 123456, IP: , LastScanned: %v", lastScannedNow),
+			&MissingRequiredFields{123456, "ip", "host", lastScannedNow},
+			fmt.Sprintf("required fields are missing. ID: 123456, IP: ip, Hostname: host, LastScanned: %v", lastScannedNow),
 		},
 	}
 
