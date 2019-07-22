@@ -318,8 +318,8 @@ func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 	if err != nil {
 		return domain.AssetEvent{}, err
 	}
-	if a.ID == 0 || a.IP == "" || lastScanned.IsZero() {
-		return domain.AssetEvent{}, &MissingRequiredFields{a.ID, a.IP, lastScanned}
+	if a.ID == 0 || (a.IP == "" && a.HostName == "") || lastScanned.IsZero() {
+		return domain.AssetEvent{}, &MissingRequiredFields{a.ID, a.IP, a.HostName, lastScanned}
 	}
 	return domain.AssetEvent{
 		ID:          a.ID,
