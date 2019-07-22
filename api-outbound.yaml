@@ -246,8 +246,10 @@ components:
           format: date-time
           description: The last time the asset was scanned in ISO8601 format.
         id:
-          type: string
+          type: integer
+          format: int64
           description: The Nexpose identifier of the asset.
+          example: 67
         hostname:
           type: string
           description: The primary host name (local or FQDN) of the asset.
@@ -263,8 +265,10 @@ components:
           format: date-time
           description: The last time the asset was scanned in ISO8601 format.
         id:
-          type: string
+          type: integer
+          format: int64
           description: The Nexpose identifier of the asset.
+          example: 67
         ip:
           type: string
           description: The primary IPv4 or IPv6 address of the asset.
