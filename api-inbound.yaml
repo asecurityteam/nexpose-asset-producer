@@ -61,8 +61,8 @@ paths:
             schema:
               $ref: '#/components/schemas/ScanNotification'
       responses:
-        "202":
-          description: "Accepted"
+        "204":
+          description: "No content"
         "400":
           description: "Invalid input"
           content:
@@ -77,9 +77,9 @@ paths:
           - "lambda"
         lambda:
           arn: "notification"
-          async: true
+          async: false
           request: '#! json .Request.Body !#'
-          success: '{"status": 202, "bodyPassthrough": true}'
+          success: '{"status": 204, "bodyPassthrough": true}'
           error: '{"status": 500, "bodyPassthrough": true}'
 components:
   schemas:
