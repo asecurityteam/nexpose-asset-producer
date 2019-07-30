@@ -375,7 +375,8 @@ func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
 	mockRT := NewMockRoundTripper(ctrl)
 
 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-		Body: ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
+		StatusCode: http.StatusOK,
 	}, nil)
 
 	host, _ := url.Parse("http://localhost")
@@ -388,6 +389,28 @@ func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
 	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
 
 	assert.IsType(t, &ErrorParsingJSONResponse{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
+}
+
+func TestFetchAssetsFirstResponseError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
+		StatusCode: http.StatusBadRequest,
+	}, nil)
+
+	host, _ := url.Parse("http://localhost")
+	nexposeAssetFetcher := &NexposeAssetFetcher{
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       host,
+		StatFn:     runhttp.StatFromContext,
+	}
+
+	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+
+	assert.IsType(t, &ErrorFetchingAssets{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
 }
 
 type errReader struct {

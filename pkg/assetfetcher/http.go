@@ -82,6 +82,12 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 		return nil, errChan
 	}
 
+	if res.StatusCode != http.StatusOK {
+		errChan <- &ErrorFetchingAssets{Inner: fmt.Errorf("unexpected response from nexpose: %d",
+			res.StatusCode)}
+		return nil, errChan
+	}
+
 	var siteAssetResp SiteAssetsResponse
 	if err := json.Unmarshal(respBody, &siteAssetResp); err != nil {
 		errChan <- &ErrorParsingJSONResponse{err, req.URL.String()}
@@ -141,8 +147,8 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 	}
 
 	if res.StatusCode != http.StatusOK {
-		errChan <- &ErrorFetchingAssets{Inner: fmt.Errorf("unexpected response from nexpose: %d %s",
-			res.StatusCode, string(respBody))}
+		errChan <- &ErrorFetchingAssets{Inner: fmt.Errorf("unexpected response from nexpose: %d",
+			res.StatusCode)}
 		return
 	}
 	var siteAssetResp SiteAssetsResponse
