@@ -97,7 +97,6 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 
 	pagedAssetChan := make(chan domain.AssetEvent, siteAssetResp.Page.TotalResources)
 	pagedErrChan := make(chan error, siteAssetResp.Page.TotalResources)
-
 	for _, asset := range siteAssetResp.Resources {
 		if !asset.hasBeenScanned() {
 			// no need to continue processing a Nexpose Asset that has never been scanned
@@ -186,10 +185,11 @@ func (a Asset) hasBeenScanned() bool {
 		if evt.Type == "SCAN" {
 			t, err := time.Parse(time.RFC3339, evt.Date)
 			// check if the date field is parsable and if it isn't 0 value
-			if err != nil && !t.IsZero() {
+			if err != nil || t.IsZero() {
 				continue
+			} else {
+				return true
 			}
-			return true
 		}
 	}
 	return false
