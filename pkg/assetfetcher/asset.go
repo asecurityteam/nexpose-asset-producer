@@ -339,7 +339,8 @@ func (a assetHistoryEvents) lastScannedTimestamp() (time.Time, error) {
 			if err != nil {
 				return latestTime, err
 			}
-			if t.After(latestTime) {
+			// also need to make sure the date is not a 0 value
+			if t.After(latestTime) && !t.IsZero() {
 				latestTime = t
 			}
 		}

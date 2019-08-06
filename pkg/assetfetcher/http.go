@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"path"
 	"sync"
+	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
@@ -183,6 +184,11 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 func (a Asset) hasBeenScanned() bool {
 	for _, evt := range a.History {
 		if evt.Type == "SCAN" {
+			t, err := time.Parse(time.RFC3339, evt.Date)
+			// check if the date field is parsable and if it isn't 0 value
+			if err != nil && !t.IsZero() {
+				continue
+			}
 			return true
 		}
 	}
