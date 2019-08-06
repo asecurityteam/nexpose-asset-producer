@@ -47,6 +47,30 @@ func TestLastAssessedForVulnerabilities(t *testing.T) {
 			time.Time{},
 			true,
 		},
+		{
+			"empty timestamp field",
+			assetHistoryEvents{
+				AssetHistory{Type: "SCAN", Date: ""},
+			},
+			time.Time{},
+			true,
+		},
+		{
+			"0 timestamp field",
+			assetHistoryEvents{
+				AssetHistory{Type: "SCAN", Date: "0001-01-01T00:00:00Z"},
+			},
+			time.Time{},
+			false,
+		},
+		{
+			"invalid time signature",
+			assetHistoryEvents{
+				AssetHistory{Type: "SCAN", Date: "2018-02-05 01:02:03 +1234 UTC"},
+			},
+			time.Time{},
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
