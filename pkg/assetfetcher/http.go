@@ -193,9 +193,8 @@ func (a Asset) hasBeenScanned() bool {
 			// check if the date field is parsable and if it isn't 0 value
 			if err != nil || t.IsZero() {
 				continue
-			} else {
-				return true
 			}
+			return true
 		}
 	}
 	return false

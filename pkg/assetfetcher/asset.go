@@ -313,7 +313,7 @@ type VulnerabilitySummary struct {
 // into an AssetEvent for downstream services.  Callers of this function are
 // expected to pass an Asset that cleanly maps to AssetEvent, meaning the
 // event must have a timestamp (because without one, it's not an event!)
-// It is guaranteed that when this function is called an asset will have a valid
+// It is expected that when this function is called an asset will have a valid
 // scanned history
 func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 	lastScanned, err := a.History.lastScannedTimestamp()

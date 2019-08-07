@@ -102,6 +102,13 @@ func TestAssetPayloadToAssetEventError(t *testing.T) {
 				History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}},
 			},
 		},
+		{
+			"No LastScanned",
+			Asset{
+				ID: 1,
+				IP: "127.0.0.1",
+			},
+		},
 	}
 
 	for _, test := range tests {

@@ -852,19 +852,39 @@ func TestNewNexposeSiteAssetsRequestWithExtraSlashes(t *testing.T) {
 
 	assert.Equal(t, "http://localhost/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
 }
-func TestHasBeenScannedBadTimeField(t *testing.T) {
-	dummyAssetBlankTimeStamp := Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: ""}}}
-	assert.Equal(t, dummyAssetBlankTimeStamp.hasBeenScanned(), false)
+func TestHasBeenScanned(t *testing.T) {
 
-	// time.Time{}.String() is not a valid format for conversion to time.RFC3339
-	dummyAssetInvalidTimeStamp := Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: time.Time{}.String()}}}
-	assert.Equal(t, dummyAssetInvalidTimeStamp.hasBeenScanned(), false)
+	tests := []struct {
+		name     string
+		asset    Asset
+		expected bool
+	}{
+		{
+			"dummyAssetBlankTimeStamp",
+			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: ""}}},
+			false,
+		},
+		{
+			"dummyAssetInvalidTimeStamp",
+			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: time.Time{}.String()}}},
+			false,
+		},
+		{
+			"dummyAssetZeroValueTimeStamp",
+			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "0001-01-01T00:00:00Z"}}},
+			false,
+		},
+		{
+			"dummyAssetValidHistory",
+			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "not a time"}, AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}}},
+			true,
+		},
+	}
 
-	dummyAssetZeroValueTimeStamp := Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "0001-01-01T00:00:00Z"}}}
-	assert.Equal(t, dummyAssetZeroValueTimeStamp.hasBeenScanned(), false)
-}
+	for _, test := range tests {
+		t.Run(test.name, func(tt *testing.T) {
+			assert.Equal(t, test.asset.hasBeenScanned(), test.expected)
+		})
+	}
 
-func TestHasBeenScannedValidHistory(t *testing.T) {
-	dummyAssetValidHistory := Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "not a time"}, AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}}}
-	assert.Equal(t, dummyAssetValidHistory.hasBeenScanned(), true)
 }
