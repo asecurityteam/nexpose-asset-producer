@@ -86,8 +86,10 @@ func TestAssetPayloadToAssetEventSuccess(t *testing.T) {
 
 func TestAssetPayloadToAssetEventError(t *testing.T) {
 	tests := []struct {
-		name  string
-		asset Asset
+		name                     string
+		asset                    Asset
+		expectedDomainAssetEvent domain.AssetEvent
+		expectedError            bool
 	}{
 		{
 			"No ID",
@@ -95,12 +97,16 @@ func TestAssetPayloadToAssetEventError(t *testing.T) {
 				IP:      "127.0.0.1",
 				History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}},
 			},
+			domain.AssetEvent{},
+			true,
 		},
 		{
 			"No IP or Hostname",
 			Asset{
 				History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}},
 			},
+			domain.AssetEvent{},
+			true,
 		},
 		{
 			"No LastScanned",
@@ -108,15 +114,16 @@ func TestAssetPayloadToAssetEventError(t *testing.T) {
 				ID: 1,
 				IP: "127.0.0.1",
 			},
+			domain.AssetEvent{ID: 1, IP: "127.0.0.1", LastScanned: time.Time{}},
+			false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			_, err := test.asset.AssetPayloadToAssetEvent()
-			lastScanned, _ := test.asset.History.lastScannedTimestamp()
-			assert.Equal(t, &MissingRequiredFields{test.asset.ID, test.asset.IP, test.asset.HostName, lastScanned}, err)
-
+			assetEvent, err := test.asset.AssetPayloadToAssetEvent()
+			assert.Equal(t, test.expectedDomainAssetEvent, assetEvent)
+			assert.Equal(t, test.expectedError, err != nil)
 		})
 	}
 }
