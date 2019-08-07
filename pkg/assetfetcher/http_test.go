@@ -702,7 +702,7 @@ func TestMakeRequestWithAssetPayloadToAssetEventError(t *testing.T) {
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 	resp := SiteAssetsResponse{
-		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "0001-01-01T00:00:00Z"}, AssetHistory{Type: "SCAN", Date: "not a time"}}}},
+		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "1234-12-01T00:00:00Z"}}}},
 		Page:      Page{},
 	}
 	respJSON, _ := json.Marshal(resp)
@@ -856,6 +856,7 @@ func TestHasBeenScannedBadTimeField(t *testing.T) {
 	dummyAssetBlankTimeStamp := Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: ""}}}
 	assert.Equal(t, dummyAssetBlankTimeStamp.hasBeenScanned(), false)
 
+	// time.Time{}.String() is not a valid format for conversion to time.RFC3339
 	dummyAssetInvalidTimeStamp := Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: time.Time{}.String()}}}
 	assert.Equal(t, dummyAssetInvalidTimeStamp.hasBeenScanned(), false)
 

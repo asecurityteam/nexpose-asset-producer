@@ -132,6 +132,8 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 
 func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan domain.AssetEvent, errChan chan error) {
 	defer wg.Done()
+
+	stater := c.StatFn(ctx)
 	req := c.newNexposeSiteAssetsRequest(siteID, page)
 
 	res, err := c.HTTPClient.Do(req.WithContext(ctx))
@@ -157,6 +159,10 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 		return
 	}
 	for _, asset := range siteAssetResp.Resources {
+		if !asset.hasBeenScanned() {
+			stater.Count("assetreceived.skipped", 1)
+			continue
+		}
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
 			errChan <- &ErrorConvertingAssetPayload{asset.ID, err}
