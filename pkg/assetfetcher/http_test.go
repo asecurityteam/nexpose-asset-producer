@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/asecurityteam/runhttp"
@@ -545,7 +546,7 @@ func TestFetchAssetsAssetPayloadToAssetEventError(t *testing.T) {
 	mockRT := NewMockRoundTripper(ctrl)
 
 	resp := SiteAssetsResponse{
-		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "not a time"}}}},
+		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}},
 		Page: Page{
 			TotalPages:     1,
 			TotalResources: 1,
@@ -572,6 +573,7 @@ func TestFetchAssetsAssetPayloadToAssetEventError(t *testing.T) {
 	for {
 		select {
 		case respAsset, ok := <-assetChan:
+
 			if !ok {
 				assetChan = nil
 			} else {
@@ -700,7 +702,7 @@ func TestMakeRequestWithAssetPayloadToAssetEventError(t *testing.T) {
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 	resp := SiteAssetsResponse{
-		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "not a time"}}}},
+		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "1234-12-01T00:00:00Z"}}}},
 		Page:      Page{},
 	}
 	respJSON, _ := json.Marshal(resp)
@@ -849,4 +851,40 @@ func TestNewNexposeSiteAssetsRequestWithExtraSlashes(t *testing.T) {
 	req := assetFetcher.newNexposeSiteAssetsRequest("/siteID/", 1)
 
 	assert.Equal(t, "http://localhost/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
+}
+func TestHasBeenScanned(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		asset    Asset
+		expected bool
+	}{
+		{
+			"dummyAssetBlankTimeStamp",
+			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: ""}}},
+			false,
+		},
+		{
+			"dummyAssetInvalidTimeStamp",
+			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: time.Time{}.String()}}},
+			false,
+		},
+		{
+			"dummyAssetZeroValueTimeStamp",
+			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "0001-01-01T00:00:00Z"}}},
+			false,
+		},
+		{
+			"dummyAssetValidHistory",
+			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "not a time"}, AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}}},
+			true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(tt *testing.T) {
+			assert.Equal(t, test.asset.hasBeenScanned(), test.expected)
+		})
+	}
+
 }

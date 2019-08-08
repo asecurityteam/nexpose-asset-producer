@@ -313,12 +313,14 @@ type VulnerabilitySummary struct {
 // into an AssetEvent for downstream services.  Callers of this function are
 // expected to pass an Asset that cleanly maps to AssetEvent, meaning the
 // event must have a timestamp (because without one, it's not an event!)
+// It is expected that when this function is called an asset will have a valid
+// scanned history
 func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 	lastScanned, err := a.History.lastScannedTimestamp()
 	if err != nil {
 		return domain.AssetEvent{}, err
 	}
-	if a.ID == 0 || (a.IP == "" && a.HostName == "") || lastScanned.IsZero() {
+	if a.ID == 0 || (a.IP == "" && a.HostName == "") {
 		return domain.AssetEvent{}, &MissingRequiredFields{a.ID, a.IP, a.HostName, lastScanned}
 	}
 	return domain.AssetEvent{
@@ -331,6 +333,7 @@ func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 
 type assetHistoryEvents []AssetHistory
 
+// by this point we should be guaranteed a valid SCAN history
 func (a assetHistoryEvents) lastScannedTimestamp() (time.Time, error) {
 	var latestTime time.Time
 	for _, evt := range a {

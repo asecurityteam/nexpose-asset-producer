@@ -47,6 +47,14 @@ func TestLastAssessedForVulnerabilities(t *testing.T) {
 			time.Time{},
 			true,
 		},
+		{
+			"invalid time signature",
+			assetHistoryEvents{
+				AssetHistory{Type: "SCAN", Date: "2018-02-05 01:02:03 +1234 UTC"},
+			},
+			time.Time{},
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
@@ -78,8 +86,10 @@ func TestAssetPayloadToAssetEventSuccess(t *testing.T) {
 
 func TestAssetPayloadToAssetEventError(t *testing.T) {
 	tests := []struct {
-		name  string
-		asset Asset
+		name                     string
+		asset                    Asset
+		expectedDomainAssetEvent domain.AssetEvent
+		expectedError            bool
 	}{
 		{
 			"No ID",
@@ -87,55 +97,60 @@ func TestAssetPayloadToAssetEventError(t *testing.T) {
 				IP:      "127.0.0.1",
 				History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}},
 			},
+			domain.AssetEvent{},
+			true,
 		},
 		{
 			"No IP or Hostname",
 			Asset{
 				History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}},
 			},
+			domain.AssetEvent{},
+			true,
 		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(tt *testing.T) {
-			_, err := test.asset.AssetPayloadToAssetEvent()
-			lastScanned, _ := test.asset.History.lastScannedTimestamp()
-			assert.Equal(t, &MissingRequiredFields{test.asset.ID, test.asset.IP, test.asset.HostName, lastScanned}, err)
-
-		})
-	}
-}
-
-func TestAssetPayloadToAssetEventErrorNeverBeenScanned(t *testing.T) {
-	tests := []struct {
-		name  string
-		asset Asset
-	}{
 		{
 			"No LastScanned",
 			Asset{
 				ID: 1,
 				IP: "127.0.0.1",
 			},
+			domain.AssetEvent{ID: 1, IP: "127.0.0.1", LastScanned: time.Time{}},
+			false,
 		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(tt *testing.T) {
+			assetEvent, err := test.asset.AssetPayloadToAssetEvent()
+			assert.Equal(t, test.expectedDomainAssetEvent, assetEvent)
+			assert.Equal(t, test.expectedError, err != nil)
+		})
+	}
+}
+
+// check if we do indeed receive a asset history with an invalid history
+// AssetPayloadToAssetEvent never should receive an invalid asset history,
+// this test is more so to have coverage, and make sure we do catch this in the event
+func TestAssetPayloadToAssetEventLastScannedError(t *testing.T) {
+	tests := []struct {
+		name  string
+		asset Asset
+	}{
 		{
-			"Never been scanned",
+			"No ID",
 			Asset{
-				ID:      1,
 				IP:      "127.0.0.1",
-				History: assetHistoryEvents{AssetHistory{Type: "ASSET-IMPORT", Date: "2019-04-22T15:02:44.000Z"}},
+				History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "invalid date time stamp"}},
 			},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			// per the AssetPayloadToAssetEvent docs, callers should only call the function
-			// when the Asset can be cleanly mapped.  The two test structs cannot, but this
-			// test remains to ensure the function handles such a case appropriately
-			_, err := test.asset.AssetPayloadToAssetEvent()
-			var lastScanned time.Time // intentionally empty
-			assert.Equal(t, &MissingRequiredFields{test.asset.ID, test.asset.IP, test.asset.HostName, lastScanned}, err)
+			assetEvent, err := test.asset.AssetPayloadToAssetEvent()
+			assert.Equal(t, domain.AssetEvent{}, assetEvent)
+			assert.NotNil(t, err)
+
 		})
 	}
 }
