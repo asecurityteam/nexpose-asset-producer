@@ -95,7 +95,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 		return nil, errChan
 	}
 
-	stater.Count("totalassets.site:"+siteID, float64(siteAssetResp.Page.TotalResources))
+	stater.Count(fmt.Sprintf("totalassets.site::%s", siteID), float64(siteAssetResp.Page.TotalResources))
 	pagedAssetChan := make(chan domain.AssetEvent, siteAssetResp.Page.TotalResources)
 	pagedErrChan := make(chan error, siteAssetResp.Page.TotalResources)
 	for _, asset := range siteAssetResp.Resources {

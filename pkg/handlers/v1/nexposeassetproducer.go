@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 
 	"sync"
 
@@ -68,6 +69,5 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 		}
 	}
 	wg.Wait()
-	// is there a better way to do this string concatention? or a better name...
-	stater.Count("totalassetsproduced.site:"+in.SiteID, totalAssetsProduced)
+	stater.Count(fmt.Sprintf("totalassetsproduced.site:%s", in.SiteID), totalAssetsProduced)
 }
