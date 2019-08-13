@@ -35,6 +35,7 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 	var totalAssetsProduced float64
 
 	wg := sync.WaitGroup{}
+	var mutex = &sync.Mutex{}
 	for {
 		select {
 		case asset, ok := <-assetChan:
@@ -50,7 +51,9 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 							Reason: err.Error(),
 						})
 					} else {
+						mutex.Lock()
 						totalAssetsProduced++
+						mutex.Unlock()
 					}
 				}(ctx, asset)
 			}
