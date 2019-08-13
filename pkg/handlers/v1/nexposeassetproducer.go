@@ -69,5 +69,5 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 		}
 	}
 	wg.Wait()
-	stater.Count(fmt.Sprintf("totalassetsproduced.site:%s", in.SiteID), totalAssetsProduced)
+	stater.Count("totalassetsproduced", totalAssetsProduced, fmt.Sprintf("site:%s", in.SiteID))
 }
