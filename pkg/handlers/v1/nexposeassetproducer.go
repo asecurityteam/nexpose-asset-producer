@@ -31,6 +31,8 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 
 	assetChan, errChan := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
 
+	var totalAssetsProduced float64
+
 	wg := sync.WaitGroup{}
 	for {
 		select {
@@ -38,7 +40,6 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 			if !ok {
 				assetChan = nil
 			} else {
-				stater.Count("assetreceived.success", 1)
 				wg.Add(1)
 				go func(ctx context.Context, asset domain.AssetEvent) {
 					defer wg.Done()
@@ -47,6 +48,8 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 						logger.Error(logs.ProducerFailure{
 							Reason: err.Error(),
 						})
+					} else {
+						totalAssetsProduced++
 					}
 				}(ctx, asset)
 			}
@@ -65,4 +68,6 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 		}
 	}
 	wg.Wait()
+	// is there a better way to do this string concatention? or a better name...
+	stater.Count("totalassetsproduced.site:"+in.SiteID, totalAssetsProduced)
 }
