@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"fmt"
 
 	"sync"
 
@@ -31,14 +32,16 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 
 	assetChan, errChan := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
 
+	var totalAssetsProduced float64
+
 	wg := sync.WaitGroup{}
+	var mutex = &sync.Mutex{}
 	for {
 		select {
 		case asset, ok := <-assetChan:
 			if !ok {
 				assetChan = nil
 			} else {
-				stater.Count("assetreceived.success", 1)
 				wg.Add(1)
 				go func(ctx context.Context, asset domain.AssetEvent) {
 					defer wg.Done()
@@ -47,6 +50,10 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 						logger.Error(logs.ProducerFailure{
 							Reason: err.Error(),
 						})
+					} else {
+						mutex.Lock()
+						totalAssetsProduced++
+						mutex.Unlock()
 					}
 				}(ctx, asset)
 			}
@@ -65,4 +72,5 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 		}
 	}
 	wg.Wait()
+	stater.Count("totalassetsproduced", totalAssetsProduced, fmt.Sprintf("site:%s", in.SiteID))
 }
