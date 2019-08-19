@@ -636,7 +636,7 @@ func TestMakeRequestSkipAndStatUnscannedAssets(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
-	mockStatFn := NewMockStat(ctrl)
+	mockStat := NewMockStat(ctrl)
 
 	assetScanned := Asset{
 		IP:      "127.0.0.1",
@@ -662,9 +662,9 @@ func TestMakeRequestSkipAndStatUnscannedAssets(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   100,
-		StatFn:     func(ctx context.Context) domain.Stat { return mockStatFn },
+		StatFn:     func(ctx context.Context) domain.Stat { return mockStat },
 	}
-	mockStatFn.EXPECT().Count("assetreceived.skipped", float64(1)).Times(1)
+	mockStat.EXPECT().Count("assetreceived.skipped", float64(1)).Times(1)
 
 	var wg sync.WaitGroup
 	assetChan := make(chan domain.AssetEvent, 1)
@@ -675,9 +675,8 @@ func TestMakeRequestSkipAndStatUnscannedAssets(t *testing.T) {
 	wg.Add(1)
 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
 	wg.Wait()
-	assert.Equal(t, 1, len(assetChan))
-	assert.NotNil(t, <-assetChan)
-
+	assert.Len(t, assetChan, 1)
+	assert.Len(t, errChan, 0)
 }
 
 func TestMakeRequestWithErrorReadingResponse(t *testing.T) {
