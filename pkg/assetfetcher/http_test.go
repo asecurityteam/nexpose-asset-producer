@@ -48,7 +48,7 @@ func TestFetchAssetsSuccess(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   100,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -106,7 +106,7 @@ func TestFetchAssetsSuccessNoScans(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   100,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -177,7 +177,7 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   1,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -258,7 +258,7 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   2, // with a page size of 2: 2 assets will be returned for pages 1 and 2, and 1 will be returned on page 3
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -335,7 +335,7 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T)
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   2,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -384,7 +384,7 @@ func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -406,7 +406,7 @@ func TestFetchAssetsFirstResponseError(t *testing.T) {
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -437,7 +437,7 @@ func TestFetchAssetsWithErrorReadingResponse(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   100,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -489,7 +489,7 @@ func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -511,7 +511,7 @@ func TestFetchAssetsHTTPError(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   100,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -563,7 +563,7 @@ func TestFetchAssetsAssetPayloadToAssetEventError(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   1,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
@@ -618,7 +618,7 @@ func TestMakeRequestSuccess(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   100,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	var wg sync.WaitGroup
@@ -649,7 +649,7 @@ func TestMakeRequestWithErrorReadingResponse(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   100,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	var wg sync.WaitGroup
@@ -678,7 +678,7 @@ func TestMakeRequestHTTPError(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   100,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	var wg sync.WaitGroup
@@ -716,7 +716,7 @@ func TestMakeRequestWithAssetPayloadToAssetEventError(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   100,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	var wg sync.WaitGroup
@@ -752,7 +752,7 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
 		PageSize:   100,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	var wg sync.WaitGroup
@@ -785,7 +785,7 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	var wg sync.WaitGroup
@@ -814,7 +814,7 @@ func TestMakeRequestWithNotOKStatus(t *testing.T) {
 	nexposeAssetFetcher := &NexposeAssetFetcher{
 		HTTPClient: &http.Client{Transport: mockRT},
 		Host:       host,
-		StatFn:     runhttp.StatFromContext,
+		StatFn:     MockStatFn,
 	}
 
 	var wg sync.WaitGroup
@@ -834,7 +834,7 @@ func TestNewNexposeSiteAssetsRequestSuccess(t *testing.T) {
 	assetFetcher := &NexposeAssetFetcher{
 		Host:     host,
 		PageSize: 100,
-		StatFn:   runhttp.StatFromContext,
+		StatFn:   MockStatFn,
 	}
 	req := assetFetcher.newNexposeSiteAssetsRequest("siteID", 1)
 
@@ -846,7 +846,7 @@ func TestNewNexposeSiteAssetsRequestWithExtraSlashes(t *testing.T) {
 	assetFetcher := &NexposeAssetFetcher{
 		Host:     host,
 		PageSize: 100,
-		StatFn:   runhttp.StatFromContext,
+		StatFn:   MockStatFn,
 	}
 	req := assetFetcher.newNexposeSiteAssetsRequest("/siteID/", 1)
 
