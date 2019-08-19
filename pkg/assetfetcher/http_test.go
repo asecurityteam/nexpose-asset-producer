@@ -674,7 +674,6 @@ func TestMakeRequestSkipAndStatUnscannedAssets(t *testing.T) {
 
 	wg.Add(1)
 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
-	wg.Wait()
 	assert.Equal(t, 1, len(assetChan))
 	assert.NotNil(t, <-assetChan)
 

@@ -48,7 +48,7 @@ func TestNexposeAssetProducerHandler(t *testing.T) {
 // tests whether we have race conditions. The race conditions are related to
 // the metric we want to keep track of and emit at the end of the Handle function
 func TestNexposeAssetProducerHandlerMultipleAssets(t *testing.T) {
-	const numberOfGoRoutines = 1000000
+	const numberOfGoRoutines = 100
 	const siteID string = "12345"
 
 	mockCtrl := gomock.NewController(t)
