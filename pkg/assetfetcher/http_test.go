@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
-	"github.com/asecurityteam/runhttp"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -631,6 +630,54 @@ func TestMakeRequestSuccess(t *testing.T) {
 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
 
 	assert.NotNil(t, <-assetChan)
+}
+
+func TestMakeRequestSkipAndStatUnscannedAssets(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRT := NewMockRoundTripper(ctrl)
+	mockStatFn := NewMockStat(ctrl)
+
+	assetScanned := Asset{
+		IP:      "127.0.0.1",
+		ID:      1,
+		History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-06-14T15:03:47.000Z"}}}
+	assetUnscanned := Asset{
+		IP:      "127.0.0.2",
+		ID:      2,
+		History: assetHistoryEvents{AssetHistory{Type: "ASSET-IMPORT", Date: "2019-06-14T15:03:47.000Z"}}}
+	resp := SiteAssetsResponse{
+		Resources: []Asset{assetScanned, assetUnscanned},
+		Page:      Page{},
+	}
+
+	respJSON, _ := json.Marshal(resp)
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
+		StatusCode: http.StatusOK,
+	}, nil)
+
+	host, _ := url.Parse("http://localhost")
+	nexposeAssetFetcher := &NexposeAssetFetcher{
+		HTTPClient: &http.Client{Transport: mockRT},
+		Host:       host,
+		PageSize:   100,
+		StatFn:     func(ctx context.Context) domain.Stat { return mockStatFn },
+	}
+	mockStatFn.EXPECT().Count("assetreceived.skipped", float64(1)).Times(1)
+
+	var wg sync.WaitGroup
+	assetChan := make(chan domain.AssetEvent, 1)
+	errChan := make(chan error, 1)
+	defer close(assetChan)
+	defer close(errChan)
+
+	wg.Add(1)
+	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+	wg.Wait()
+	assert.Equal(t, 1, len(assetChan))
+	assert.NotNil(t, <-assetChan)
+
 }
 
 func TestMakeRequestWithErrorReadingResponse(t *testing.T) {
