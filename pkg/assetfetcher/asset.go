@@ -352,3 +352,12 @@ func (a assetHistoryEvents) lastScannedTimestamp() (time.Time, error) {
 	// returned
 	return latestTime, nil
 }
+
+// AssetMissingField is called when an asset is skipped due to missing fields. It must either not have ID or not having Hostname or IP,
+// as we check in other parts in http.go if there is a bad timestamp
+func (a Asset) AssetMissingField() string {
+	if a.ID == 0 {
+		return "ID"
+	}
+	return "HostandIP"
+}

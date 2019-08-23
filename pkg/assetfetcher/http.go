@@ -100,12 +100,12 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	pagedErrChan := make(chan error, siteAssetResp.Page.TotalResources)
 	for _, asset := range siteAssetResp.Resources {
 		if !asset.hasBeenScanned() {
-			// no need to continue processing a Nexpose Asset that has never been scanned
-			stater.Count("assetreceived.skipped", 1)
+			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID), "TimeStamp")
 			continue
 		}
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
+			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID), asset.AssetMissingField())
 			pagedErrChan <- &ErrorConvertingAssetPayload{asset.ID, err}
 		} else {
 			pagedAssetChan <- assetEvent
@@ -161,11 +161,12 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 	}
 	for _, asset := range siteAssetResp.Resources {
 		if !asset.hasBeenScanned() {
-			stater.Count("assetreceived.skipped", 1)
+			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID), "TimeStamp")
 			continue
 		}
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
+			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID), asset.AssetMissingField())
 			errChan <- &ErrorConvertingAssetPayload{asset.ID, err}
 		} else {
 			assetChan <- assetEvent

@@ -47,8 +47,10 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 					defer wg.Done()
 					err := h.Producer.Produce(ctx, asset)
 					if err != nil {
+						reason := err.Error()
+						stater.Count("producerfailure", 1, fmt.Sprintf("site:%s", in.SiteID), reason)
 						logger.Error(logs.ProducerFailure{
-							Reason: err.Error(),
+							Reason: reason,
 						})
 					} else {
 						mutex.Lock()
@@ -61,7 +63,6 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 			if !ok {
 				errChan = nil
 			} else {
-				stater.Count("assetfetch.error", 1)
 				logger.Error(logs.AssetFetchFail{
 					Reason: err.Error(),
 				})
