@@ -6,6 +6,7 @@ import (
 
 	"sync"
 
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/assetfetcher"
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/logs"
 )
@@ -47,6 +48,7 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 					defer wg.Done()
 					err := h.Producer.Produce(ctx, asset)
 					if err != nil {
+						stater.Count("producerfailure", 1, fmt.Sprintf("site:%s", in.SiteID))
 						logger.Error(logs.ProducerFailure{
 							Reason: err.Error(),
 						})
@@ -61,7 +63,12 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 			if !ok {
 				errChan = nil
 			} else {
-				stater.Count("assetfetch.error", 1)
+				switch err.(type) {
+				case *assetfetcher.NeverBeenScanned:
+					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "neverbeenscanned"))
+				case *assetfetcher.MissingRequiredInformation:
+					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "missingfields"))
+				}
 				logger.Error(logs.AssetFetchFail{
 					Reason: err.Error(),
 				})

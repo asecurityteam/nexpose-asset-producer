@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"path"
 	"sync"
-	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
@@ -99,14 +98,9 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	pagedAssetChan := make(chan domain.AssetEvent, siteAssetResp.Page.TotalResources)
 	pagedErrChan := make(chan error, siteAssetResp.Page.TotalResources)
 	for _, asset := range siteAssetResp.Resources {
-		if !asset.hasBeenScanned() {
-			// no need to continue processing a Nexpose Asset that has never been scanned
-			stater.Count("assetreceived.skipped", 1)
-			continue
-		}
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
-			pagedErrChan <- &ErrorConvertingAssetPayload{asset.ID, err}
+			pagedErrChan <- err
 		} else {
 			pagedAssetChan <- assetEvent
 		}
@@ -134,7 +128,6 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan domain.AssetEvent, errChan chan error) {
 	defer wg.Done()
 
-	stater := c.StatFn(ctx)
 	req := c.newNexposeSiteAssetsRequest(siteID, page)
 
 	res, err := c.HTTPClient.Do(req.WithContext(ctx))
@@ -160,13 +153,9 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 		return
 	}
 	for _, asset := range siteAssetResp.Resources {
-		if !asset.hasBeenScanned() {
-			stater.Count("assetreceived.skipped", 1)
-			continue
-		}
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
-			errChan <- &ErrorConvertingAssetPayload{asset.ID, err}
+			errChan <- err
 		} else {
 			assetChan <- assetEvent
 		}
@@ -185,18 +174,4 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 	// which we already checked for earlier, so no need to check it again
 	req, _ := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 	return req
-}
-
-func (a Asset) hasBeenScanned() bool {
-	for _, evt := range a.History {
-		if evt.Type == "SCAN" {
-			t, err := time.Parse(time.RFC3339, evt.Date)
-			// check if the date field is parsable and if it isn't 0 value
-			if err != nil || t.IsZero() {
-				continue
-			}
-			return true
-		}
-	}
-	return false
 }
