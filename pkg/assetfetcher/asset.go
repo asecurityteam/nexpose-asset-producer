@@ -316,12 +316,9 @@ type VulnerabilitySummary struct {
 // It is expected that when this function is called an asset will have a valid
 // scanned history
 func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
-	lastScanned, err := a.History.lastScannedTimestamp()
-	if err != nil {
-		return domain.AssetEvent{}, err
-	}
-	if a.ID == 0 || (a.IP == "" && a.HostName == "") {
-		return domain.AssetEvent{}, &MissingRequiredFields{a.ID, a.IP, a.HostName, lastScanned}
+	lastScanned := a.History.lastScannedTimestamp()
+	if a.ID == 0 || (a.IP == "" && a.HostName == "") || lastScanned.Equal(time.Time{}) {
+		return domain.AssetEvent{}, &MissingRequiredInformation{a.ID, a.IP, a.HostName, lastScanned}
 	}
 	return domain.AssetEvent{
 		ID:          a.ID,
@@ -334,21 +331,19 @@ func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 type assetHistoryEvents []AssetHistory
 
 // by this point we should be guaranteed a valid SCAN history
-func (a assetHistoryEvents) lastScannedTimestamp() (time.Time, error) {
-	var latestTime time.Time
+func (a assetHistoryEvents) lastScannedTimestamp() time.Time {
+	latestTime := time.Time{}
 	for _, evt := range a {
 		if evt.Type == "SCAN" {
 			t, err := time.Parse(time.RFC3339, evt.Date)
-			if err != nil {
-				return latestTime, err
+			// check if the date field is parsable and if it isn't 0 value
+			if err != nil || t.IsZero() {
+				continue
 			}
 			if t.After(latestTime) {
 				latestTime = t
 			}
 		}
 	}
-	// in such a case where the history array of a Nexpose resource lacks any history
-	// elements with a value of "SCAN" for "type", an empty Time struct is intentionally
-	// returned
-	return latestTime, nil
+	return latestTime
 }

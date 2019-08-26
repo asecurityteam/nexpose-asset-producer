@@ -71,8 +71,8 @@ func (e *ErrorConvertingAssetPayload) Error() string {
 	return fmt.Sprintf("error converting asset %v payload to event %v", e.AssetID, e.Inner)
 }
 
-// MissingRequiredFields represents an error we get if the ID or lastScanned date is empty
-type MissingRequiredFields struct {
+// MissingRequiredInformation represents an error we get if the ID, IP and Hostname, or lastScanned date is empty
+type MissingRequiredInformation struct {
 	AssetID          int64
 	AssetIP          string
 	AssetHostname    string
@@ -80,6 +80,6 @@ type MissingRequiredFields struct {
 }
 
 // Error returns an MissingRequiredFields
-func (e *MissingRequiredFields) Error() string {
+func (e *MissingRequiredInformation) Error() string {
 	return fmt.Sprintf("required fields are missing. ID: %v, IP: %s, Hostname: %s, LastScanned: %v", e.AssetID, e.AssetIP, e.AssetHostname, e.AssetLastScanned)
 }

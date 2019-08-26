@@ -62,6 +62,7 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 			if !ok {
 				errChan = nil
 			} else {
+				stater.Count("assetmissinginformation", 1, fmt.Sprintf("site:%s", in.SiteID))
 				logger.Error(logs.AssetFetchFail{
 					Reason: err.Error(),
 				})
