@@ -154,37 +154,3 @@ func TestAssetPayloadToAssetEventLastScannedError(t *testing.T) {
 		})
 	}
 }
-
-func TestAssetMissingField(t *testing.T) {
-	tests := []struct {
-		name         string
-		asset        Asset
-		missingField string
-	}{
-		{
-			"No ID",
-			Asset{
-				ID: 0,
-				IP: "127.0.0.1",
-			},
-			"ID",
-		},
-		{
-			"No HostName or IP",
-			Asset{
-				ID:       1234,
-				IP:       "",
-				HostName: "",
-			},
-			"HostandIP",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(tt *testing.T) {
-			missingField := test.asset.AssetMissingField()
-			assert.Equal(t, test.missingField, missingField)
-
-		})
-	}
-}

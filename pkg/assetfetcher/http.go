@@ -100,12 +100,12 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	pagedErrChan := make(chan error, siteAssetResp.Page.TotalResources)
 	for _, asset := range siteAssetResp.Resources {
 		if !asset.hasBeenScanned() {
-			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID), "TimeStamp")
+			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID))
 			continue
 		}
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
-			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID), asset.AssetMissingField())
+			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID))
 			pagedErrChan <- &ErrorConvertingAssetPayload{asset.ID, err}
 		} else {
 			pagedAssetChan <- assetEvent
@@ -161,12 +161,12 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 	}
 	for _, asset := range siteAssetResp.Resources {
 		if !asset.hasBeenScanned() {
-			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID), "TimeStamp")
+			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID))
 			continue
 		}
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
-			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID), asset.AssetMissingField())
+			stater.Count("assetmissingfield", 1, fmt.Sprintf("site:%s", siteID))
 			errChan <- &ErrorConvertingAssetPayload{asset.ID, err}
 		} else {
 			assetChan <- assetEvent

@@ -665,7 +665,7 @@ func TestMakeRequestSkipAndStatUnscannedAssets(t *testing.T) {
 		PageSize:   100,
 		StatFn:     func(ctx context.Context) domain.Stat { return mockStat },
 	}
-	mockStat.EXPECT().Count("assetmissingfield", float64(1), fmt.Sprintf("site:%s", "siteID"), "TimeStamp").Times(1)
+	mockStat.EXPECT().Count("assetmissingfield", float64(1), fmt.Sprintf("site:%s", "siteID")).Times(1)
 
 	var wg sync.WaitGroup
 	assetChan := make(chan domain.AssetEvent, 1)
