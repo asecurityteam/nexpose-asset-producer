@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/golang/mock/gomock"
@@ -119,11 +117,11 @@ func TestFetchAssetsSuccessNoScans(t *testing.T) {
 			} else {
 				t.Fatal("Nothing should have been produced into the assetChan channel")
 			}
-		case _, ok := <-errChan:
+		case assetError, ok := <-errChan:
 			if !ok {
 				errChan = nil
 			} else {
-				t.Fatal("Nothing should have been produced into the assetChan channel")
+				assert.Error(t, assetError)
 			}
 		}
 		if assetChan == nil && errChan == nil {
@@ -633,7 +631,7 @@ func TestMakeRequestSuccess(t *testing.T) {
 	assert.NotNil(t, <-assetChan)
 }
 
-func TestMakeRequestSkipAndStatUnscannedAssets(t *testing.T) {
+func TestMakeRequestStatUnscannedAssets(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
@@ -665,7 +663,6 @@ func TestMakeRequestSkipAndStatUnscannedAssets(t *testing.T) {
 		PageSize:   100,
 		StatFn:     func(ctx context.Context) domain.Stat { return mockStat },
 	}
-	mockStat.EXPECT().Count("assetmissingfield", float64(1), fmt.Sprintf("site:%s", "siteID")).Times(1)
 
 	var wg sync.WaitGroup
 	assetChan := make(chan domain.AssetEvent, 1)
@@ -677,7 +674,7 @@ func TestMakeRequestSkipAndStatUnscannedAssets(t *testing.T) {
 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
 	wg.Wait()
 	assert.Len(t, assetChan, 1)
-	assert.Len(t, errChan, 0)
+	assert.Len(t, errChan, 1)
 }
 
 func TestMakeRequestWithErrorReadingResponse(t *testing.T) {
@@ -898,40 +895,4 @@ func TestNewNexposeSiteAssetsRequestWithExtraSlashes(t *testing.T) {
 	req := assetFetcher.newNexposeSiteAssetsRequest("/siteID/", 1)
 
 	assert.Equal(t, "http://localhost/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
-}
-func TestHasBeenScanned(t *testing.T) {
-
-	tests := []struct {
-		name     string
-		asset    Asset
-		expected bool
-	}{
-		{
-			"dummyAssetBlankTimeStamp",
-			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: ""}}},
-			false,
-		},
-		{
-			"dummyAssetInvalidTimeStamp",
-			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: time.Time{}.String()}}},
-			false,
-		},
-		{
-			"dummyAssetZeroValueTimeStamp",
-			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "0001-01-01T00:00:00Z"}}},
-			false,
-		},
-		{
-			"dummyAssetValidHistory",
-			Asset{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "not a time"}, AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}}},
-			true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(tt *testing.T) {
-			assert.Equal(t, test.asset.hasBeenScanned(), test.expected)
-		})
-	}
-
 }

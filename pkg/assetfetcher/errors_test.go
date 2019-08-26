@@ -52,8 +52,8 @@ func TestAssetFetcherErrors(t *testing.T) {
 			fmt.Sprintf("error converting asset 123456 payload to event %v", customError),
 		},
 		{
-			"MissingRequiredFields",
-			&MissingRequiredFields{123456, "ip", "host", lastScannedNow},
+			"MissingRequiredInformation",
+			&MissingRequiredInformation{123456, "ip", "host", lastScannedNow},
 			fmt.Sprintf("required fields are missing. ID: 123456, IP: ip, Hostname: host, LastScanned: %v", lastScannedNow),
 		},
 	}
@@ -100,7 +100,7 @@ func TestAssetFetcherErrorsCanBeNil(t *testing.T) {
 		},
 		{
 			"MissingRequiredFields",
-			&MissingRequiredFields{},
+			&MissingRequiredInformation{},
 		},
 	}
 
