@@ -317,6 +317,9 @@ type VulnerabilitySummary struct {
 // scanned history
 func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 	lastScanned := a.History.lastScannedTimestamp()
+	if lastScanned.Equal(time.Time{}) {
+		return domain.AssetEvent{}, &NeverBeenScanned{a.ID, a.IP, a.HostName}
+	}
 	if a.ID == 0 || (a.IP == "" && a.HostName == "") || lastScanned.Equal(time.Time{}) {
 		return domain.AssetEvent{}, &MissingRequiredInformation{a.ID, a.IP, a.HostName, lastScanned}
 	}

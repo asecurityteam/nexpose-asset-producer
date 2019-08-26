@@ -588,7 +588,7 @@ func TestFetchAssetsAssetPayloadToAssetEventError(t *testing.T) {
 			break
 		}
 	}
-	assert.IsType(t, &ErrorConvertingAssetPayload{}, actualError)
+	assert.IsType(t, &MissingRequiredInformation{}, actualError)
 }
 
 func TestMakeRequestSuccess(t *testing.T) {
@@ -774,7 +774,7 @@ func TestMakeRequestWithAssetPayloadToAssetEventError(t *testing.T) {
 	close(assetChan)
 	close(errChan)
 
-	assert.IsType(t, &ErrorConvertingAssetPayload{}, <-errChan)
+	assert.IsType(t, &MissingRequiredInformation{}, <-errChan)
 }
 
 func TestMakeRequestWithNoAssetsReturned(t *testing.T) {

@@ -100,7 +100,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	for _, asset := range siteAssetResp.Resources {
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
-			pagedErrChan <- &ErrorConvertingAssetPayload{asset.ID, err}
+			pagedErrChan <- err
 		} else {
 			pagedAssetChan <- assetEvent
 		}
@@ -155,7 +155,7 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 	for _, asset := range siteAssetResp.Resources {
 		assetEvent, err := asset.AssetPayloadToAssetEvent()
 		if err != nil {
-			errChan <- &ErrorConvertingAssetPayload{asset.ID, err}
+			errChan <- err
 		} else {
 			assetChan <- assetEvent
 		}
