@@ -316,11 +316,11 @@ type VulnerabilitySummary struct {
 // It is expected that when this function is called an asset will have a valid
 // scanned history
 func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
-	lastScanned := a.History.lastScannedTimestamp()
+	lastScanned := a.History.verifyAndGetLastScanned()
 	if lastScanned.Equal(time.Time{}) {
 		return domain.AssetEvent{}, &NeverBeenScanned{a.ID, a.IP, a.HostName}
 	}
-	if a.ID == 0 || (a.IP == "" && a.HostName == "") || lastScanned.Equal(time.Time{}) {
+	if a.ID == 0 || (a.IP == "" && a.HostName == "") {
 		return domain.AssetEvent{}, &MissingRequiredInformation{a.ID, a.IP, a.HostName, lastScanned}
 	}
 	return domain.AssetEvent{
@@ -333,8 +333,9 @@ func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
 
 type assetHistoryEvents []AssetHistory
 
-// by this point we should be guaranteed a valid SCAN history
-func (a assetHistoryEvents) lastScannedTimestamp() time.Time {
+// This function verifies the Asset History, and returns the time of the last scan if valid.
+// If there is no valid last scan time, then this will return time.Time's zero value
+func (a assetHistoryEvents) verifyAndGetLastScanned() time.Time {
 	latestTime := time.Time{}
 	for _, evt := range a {
 		if evt.Type == "SCAN" {

@@ -52,7 +52,7 @@ func TestLastAssessedForVulnerabilities(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			lastAssessed := test.history.lastScannedTimestamp()
+			lastAssessed := test.history.verifyAndGetLastScanned()
 			assert.Equal(t, test.expected, lastAssessed)
 		})
 	}

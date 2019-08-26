@@ -65,9 +65,9 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 			} else {
 				switch err.(type) {
 				case *assetfetcher.NeverBeenScanned:
-					stater.Count("assetmissinginformation", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "neverbeenscanned"))
+					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "neverbeenscanned"))
 				case *assetfetcher.MissingRequiredInformation:
-					stater.Count("assetmissinginformation", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "missingfields"))
+					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "missingfields"))
 				}
 				logger.Error(logs.AssetFetchFail{
 					Reason: err.Error(),
