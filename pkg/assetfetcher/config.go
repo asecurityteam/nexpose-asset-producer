@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/asecurityteam/runhttp"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
 
 // AssetFetcherConfig holds configuration to connect to Nexpose
@@ -41,6 +41,6 @@ func (*AssetFetcherConfigComponent) New(_ context.Context, c *AssetFetcherConfig
 	return &NexposeAssetFetcher{
 		Host:     host,
 		PageSize: c.PageSize,
-		StatFn:   runhttp.StatFromContext,
+		StatFn:   domain.StatFromContext,
 	}, nil
 }
