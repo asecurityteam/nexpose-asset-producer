@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/assetfetcher"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	nexposeassetproducer "github.com/asecurityteam/nexpose-asset-producer/pkg/handlers/v1"
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/producer"
-	"github.com/asecurityteam/runhttp"
 	"github.com/asecurityteam/serverfull"
 	"github.com/asecurityteam/settings"
 )
@@ -37,8 +37,8 @@ func main() {
 	notifier := &nexposeassetproducer.NexposeScannedAssetProducer{
 		Producer:     assetProducer,
 		AssetFetcher: assetFetcher,
-		LogFn:        runhttp.LoggerFromContext,
-		StatFn:       runhttp.StatFromContext,
+		LogFn:        domain.LoggerFromContext,
+		StatFn:       domain.StatFromContext,
 	}
 
 	lambdaHandlers := map[string]serverfull.Function{
