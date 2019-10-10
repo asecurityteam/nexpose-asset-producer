@@ -1,7 +1,7 @@
 <a id="markdown-nexpose-asset-producer" name="nexpose-asset-producer"></a>
 # nexpose-asset-producer - A service that produces scanned Nexpose assets to an event stream
 [![GoDoc](https://godoc.org/github.com/asecurityteam/nexpose-asset-producer?status.svg)](https://godoc.org/github.com/asecurityteam/nexpose-asset-producer)
-[![Build Status](https://travis-ci.org/asecurityteam/nexpose-asset-producer.png?branch=master)](https://travis-ci.org/asecurityteam/nexpose-asset-producer)
+[![Build Status](https://travis-ci.com/asecurityteam/nexpose-asset-producer.png?branch=master)](https://travis-ci.com/asecurityteam/nexpose-asset-producer)
 [![codecov.io](https://codecov.io/github/asecurityteam/nexpose-asset-producer/coverage.svg?branch=master)](https://codecov.io/github/asecurityteam/nexpose-asset-producer?branch=master)
 
 <https://github.com/asecurityteam/nexpose-asset-producer>
