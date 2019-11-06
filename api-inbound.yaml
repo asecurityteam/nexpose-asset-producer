@@ -51,6 +51,24 @@ paths:
           description: "Success."
       x-transportd:
         backend: app
+  /dependencycheck:
+    get:
+      description: "Dependency check."
+      responses:
+        "200":
+          description: "Success."
+      x-transportd:
+        backend: app
+        enabled:
+          - "metrics"
+          - "accesslog"
+          - "lambda"
+        lambda:
+          arn: "dependencycheck"
+          async: false
+          request: '#! json .Request.Body !#'
+          success: '{"status": 200, "bodyPassthrough": true}'
+          error: '{"status": 500, "bodyPassthrough": true}'
   /notification:
     post:
       description: Get scanned assets and vulnerabilities from last scan for given site and publish them onto an event stream.
