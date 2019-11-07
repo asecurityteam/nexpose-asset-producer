@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    depends_on: 
+    depends_on:
       - gateway-outbound
     environment:
       SERVERFULL_RUNTIME_HTTPSERVER_ADDRESS: :8081
@@ -29,7 +29,7 @@ services:
     build:
       context: .
       dockerfile: gateway-inbound.Dockerfile
-      depends_on: 
+      depends_on:
         - app
     ports:
       - "8080:8080"
