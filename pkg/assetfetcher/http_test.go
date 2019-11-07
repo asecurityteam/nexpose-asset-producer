@@ -896,3 +896,39 @@ func TestNewNexposeSiteAssetsRequestWithExtraSlashes(t *testing.T) {
 
 	assert.Equal(t, "http://localhost/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
 }
+
+func TestCheckDependenciesSuccess(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockRT := NewMockRoundTripper(ctrl)
+
+	host, _ := url.Parse("http://localhost")
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte("🦀"))),
+		StatusCode: http.StatusOK,
+	}, nil)
+	assetFetcher := &NexposeAssetFetcher{
+		Host:       host,
+		HTTPClient: &http.Client{Transport: mockRT},
+	}
+	req := assetFetcher.CheckDependencies(context.Background())
+
+	assert.Equal(t, req, nil)
+}
+
+func TestCheckDependenciesFailure(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	mockRT := NewMockRoundTripper(ctrl)
+
+	host, _ := url.Parse("http://localhost")
+	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte("🐖"))),
+		StatusCode: http.StatusTeapot,
+	}, nil)
+	assetFetcher := &NexposeAssetFetcher{
+		Host:       host,
+		HTTPClient: &http.Client{Transport: mockRT},
+	}
+	req := assetFetcher.CheckDependencies(context.Background())
+
+	assert.NotNil(t, req)
+}

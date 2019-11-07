@@ -13,10 +13,10 @@ func TestDepCheckHandleSuccess(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	MockDependencyChecker := NewMockDependencyChecker(ctrl)
-	MockDependencyChecker.EXPECT().CheckDependencies(context.Background()).Return(nil)
+	assetFetcher := NewMockAssetFetcher(ctrl)
+	assetFetcher.EXPECT().CheckDependencies(context.Background()).Return(nil)
 	handler := &DependencyCheckHandler{
-		DependencyChecker: MockDependencyChecker,
+		AssetFetcher: assetFetcher,
 	}
 	err := handler.Handle(context.Background())
 
@@ -27,10 +27,10 @@ func TestDepCheckHandleError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	MockDependencyChecker := NewMockDependencyChecker(ctrl)
-	MockDependencyChecker.EXPECT().CheckDependencies(context.Background()).Return(fmt.Errorf("error"))
+	assetFetcher := NewMockAssetFetcher(ctrl)
+	assetFetcher.EXPECT().CheckDependencies(context.Background()).Return(fmt.Errorf("error"))
 	handler := &DependencyCheckHandler{
-		DependencyChecker: MockDependencyChecker,
+		AssetFetcher: assetFetcher,
 	}
 	err := handler.Handle(context.Background())
 
