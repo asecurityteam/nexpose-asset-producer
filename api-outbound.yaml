@@ -120,7 +120,7 @@ paths:
         basicauth:
           username: "${NEXPOSE_API_USERNAME}"
           password: "${NEXPOSE_API_PASSWORD}"
-  /api/3/:
+  /api/3:
     get:
       description: Nexpose API root endpoint, used for verifying if Nexpose can be reached
       responses:
