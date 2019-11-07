@@ -175,3 +175,18 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 	req, _ := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 	return req
 }
+
+// CheckDependencies is aight
+func (c *NexposeAssetFetcher) CheckDependencies(ctx context.Context) error {
+	u, _ := url.Parse(c.Host.String() + "/api/3/scans")
+	req, _ := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		return fmt.Errorf("Nexpose unexpectedly returned non-200 response code: %d attempting to GET: %s", res.StatusCode, u.String())
+	}
+	return nil
+}

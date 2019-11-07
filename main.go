@@ -41,7 +41,7 @@ func main() {
 		StatFn:       domain.StatFromContext,
 	}
 
-	dependencyCheckHandler := &nexposeassetproducer.DependencyCheckHandler{}
+	dependencyCheckHandler := &nexposeassetproducer.DependencyCheckHandler{AssetFetcher: assetFetcher}
 
 	lambdaHandlers := map[string]serverfull.Function{
 		"notification":    serverfull.NewFunction(notifier.Handle),
