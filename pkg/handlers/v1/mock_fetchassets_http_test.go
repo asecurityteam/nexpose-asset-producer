@@ -49,17 +49,3 @@ func (mr *MockAssetFetcherMockRecorder) FetchAssets(ctx, siteID interface{}) *go
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchAssets", reflect.TypeOf((*MockAssetFetcher)(nil).FetchAssets), ctx, siteID)
 }
-
-// CheckDependencies mocks base method
-func (m *MockAssetFetcher) CheckDependencies(ctx context.Context) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckDependencies", ctx)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CheckDependencies indicates an expected call of CheckDependencies
-func (mr *MockAssetFetcherMockRecorder) CheckDependencies(ctx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDependencies", reflect.TypeOf((*MockAssetFetcher)(nil).CheckDependencies), ctx)
-}

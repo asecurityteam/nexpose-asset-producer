@@ -120,6 +120,57 @@ paths:
         basicauth:
           username: "${NEXPOSE_API_USERNAME}"
           password: "${NEXPOSE_API_PASSWORD}"
+  /api/3/:
+    get:
+      description: Nexpose API root endpoint, used for verifying if Nexpose can be reached
+      responses:
+        200:
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                type: object
+        401:
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NexposeError'
+        404:
+          description: "Not Found"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NexposeError'
+      x-transportd:
+        backend: nexpose
+        enabled:
+          - "accesslog"
+          - "responsevalidation"
+          - "timeout"
+          - "retry"
+          - "basicauth"
+        timeout:
+          after: "2s"
+        retry:
+          backoff: "50ms"
+          limit: 3
+          codes:
+            - 500
+            - 501
+            - 502
+            - 503
+            - 504
+            - 505
+            - 506
+            - 507
+            - 508
+            - 509
+            - 510
+            - 511
+        basicauth:
+          username: "${NEXPOSE_API_USERNAME}"
+          password: "${NEXPOSE_API_PASSWORD}"
   /publish:
     post:
       description: Publish an asset event to an HTTP queue.
