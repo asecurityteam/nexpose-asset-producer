@@ -25,7 +25,6 @@ services:
       NEXPOSE_HOST: http://gateway-outbound:8082
       NEXPOSE_PAGESIZE: 100
       HTTPPRODUCER_ENDPOINT: http://gateway-outbound:8082/publish
-      DEPENDENCYCHECK_NEXPOSEENDPOINT: "" # configure for /dependencycheck to work
   gateway-inbound:
     build:
       context: .
