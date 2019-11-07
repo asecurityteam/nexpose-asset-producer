@@ -151,7 +151,7 @@ paths:
           - "retry"
           - "basicauth"
         timeout:
-          after: "2s"
+          after: "30s"
         retry:
           backoff: "50ms"
           limit: 3

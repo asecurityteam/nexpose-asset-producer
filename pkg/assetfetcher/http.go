@@ -176,7 +176,7 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 	return req
 }
 
-// CheckDependencies makes a call to the nexpose endppoint "/api/3/scans".
+// CheckDependencies makes a call to the nexpose endppoint "/api/3".
 // Because asset producer endpoints vary user to user, we want to hit an endpoint
 // that is consistent for any Nexpose user
 func (c *NexposeAssetFetcher) CheckDependencies(ctx context.Context) error {
