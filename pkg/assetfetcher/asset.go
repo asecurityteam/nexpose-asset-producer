@@ -1,6 +1,7 @@
 package assetfetcher
 
 import (
+	"errors"
 	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
@@ -310,44 +311,37 @@ type VulnerabilitySummary struct {
 }
 
 // AssetPayloadToAssetEvent translates a Nexpose Asset API response payload
-// into an AssetEvent for downstream services.  Callers of this function are
-// expected to pass an Asset that cleanly maps to AssetEvent, meaning the
-// event must have a timestamp (because without one, it's not an event!)
-// It is expected that when this function is called an asset will have a valid
-// scanned history
-func (a Asset) AssetPayloadToAssetEvent() (domain.AssetEvent, error) {
-	lastScanned := a.History.verifyAndGetLastScanned()
-	if lastScanned.Equal(time.Time{}) {
-		return domain.AssetEvent{}, &NeverBeenScanned{a.ID, a.IP, a.HostName}
-	}
+// into an AssetEvent for downstream services.
+func (a Asset) AssetPayloadToAssetEvent(scanTime time.Time) (domain.AssetEvent, error) {
 	if a.ID == 0 || (a.IP == "" && a.HostName == "") {
-		return domain.AssetEvent{}, &MissingRequiredInformation{a.ID, a.IP, a.HostName, lastScanned}
+		return domain.AssetEvent{}, &MissingRequiredInformation{a.ID, a.IP, a.HostName, scanTime}
 	}
 	return domain.AssetEvent{
-		ID:          a.ID,
-		Hostname:    a.HostName,
-		IP:          a.IP,
-		LastScanned: lastScanned,
+		ID:       a.ID,
+		Hostname: a.HostName,
+		IP:       a.IP,
+		ScanTime: scanTime,
 	}, nil
 }
 
 type assetHistoryEvents []AssetHistory
 
-// This function verifies the Asset History, and returns the time of the last scan if valid.
-// If there is no valid last scan time, then this will return time.Time's zero value
-func (a assetHistoryEvents) verifyAndGetLastScanned() time.Time {
-	latestTime := time.Time{}
-	for _, evt := range a {
+// GetScanTime searches through the asset's event history for a scan event with the ScanID
+// that matches the ScanID of the scan completion event that triggered the pipeline.
+func (a Asset) GetScanTime(scanID int64) (time.Time, error) {
+	for _, evt := range a.History {
 		if evt.Type == "SCAN" {
-			t, err := time.Parse(time.RFC3339, evt.Date)
-			// check if the date field is parsable and if it isn't 0 value
-			if err != nil || t.IsZero() {
-				continue
-			}
-			if t.After(latestTime) {
-				latestTime = t
+			if evt.ScanID == scanID {
+				scanTime, err := time.Parse(time.RFC3339, evt.Date)
+				if err != nil {
+					return time.Time{}, &InvalidScanTime{scanID, scanTime, a.ID, a.IP, a.HostName, err}
+				}
+				if scanTime.IsZero() {
+					return time.Time{}, &InvalidScanTime{scanID, scanTime, a.ID, a.IP, a.HostName, errors.New("scan time is zero")}
+				}
+				return scanTime, nil
 			}
 		}
 	}
-	return latestTime
+	return time.Time{}, &ScanIDForLastScanNotInAssetHistory{scanID, a.ID, a.IP, a.HostName}
 }

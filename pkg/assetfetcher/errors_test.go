@@ -19,7 +19,7 @@ type errorTest struct {
 func TestAssetFetcherErrors(t *testing.T) {
 	nexposeTestURL := "http://nexpose-instance.com"
 	customError := errors.New("myCustomError")
-	lastScannedNow := time.Now()
+	scanTime := time.Now()
 	tc := []errorTest{
 		{
 			"URLParsingError",
@@ -47,14 +47,19 @@ func TestAssetFetcherErrors(t *testing.T) {
 			fmt.Sprintf("error fetching assets from Nexpose %v", customError),
 		},
 		{
-			"ErrorConvertingAssetPayload",
-			&ErrorConvertingAssetPayload{123456, customError},
-			fmt.Sprintf("error converting asset 123456 payload to event %v", customError),
+			"MissingRequiredInformation",
+			&MissingRequiredInformation{123456, "ip", "host", scanTime},
+			fmt.Sprintf("required fields are missing. ID: 123456, IP: ip, Hostname: host, ScanTime: %v", scanTime),
 		},
 		{
-			"MissingRequiredInformation",
-			&MissingRequiredInformation{123456, "ip", "host", lastScannedNow},
-			fmt.Sprintf("required fields are missing. ID: 123456, IP: ip, Hostname: host, LastScanned: %v", lastScannedNow),
+			"InvalidScanTime",
+			&InvalidScanTime{1, scanTime, 123456, "ip", "host", errors.New("myError")},
+			fmt.Sprintf("Invalid scan time. ScanID: 1, ScanTime: %v, AssetID: 123456, IP: ip, Hostname: host, Error: myError", scanTime),
+		},
+		{
+			"ScanIDForLastScanNotInAssetHistory",
+			&ScanIDForLastScanNotInAssetHistory{1, 123456, "ip", "host"},
+			fmt.Sprintf("Asset was not scanned during the scan with ScanID: 1, AssetID: 123456, IP: ip, Hostname: host"),
 		},
 	}
 
@@ -93,10 +98,6 @@ func TestAssetFetcherErrorsCanBeNil(t *testing.T) {
 		{
 			"ErrorFetchingAssets",
 			&ErrorFetchingAssets{},
-		},
-		{
-			"ErrorConvertingAssetPayload",
-			&ErrorConvertingAssetPayload{},
 		},
 		{
 			"MissingRequiredFields",

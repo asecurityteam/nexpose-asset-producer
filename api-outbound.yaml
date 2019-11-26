@@ -276,6 +276,9 @@ components:
           type: string
           format: date-time
           description: The date the asset information was collected or changed.
+        scanId:
+          type: integer
+          descrtion: If a scan-oriented change, the identifier of the corresponding scan the asset was scanned in.
     NexposeError:
       type: object
       properties:
@@ -288,14 +291,14 @@ components:
     AssetEventWithHostname:
       type: object
       required:
-        - lastScanned
+        - scanTime
         - id
         - hostname
       properties:
-        lastScanned:
+        scanTime:
           type: string
           format: date-time
-          description: The last time the asset was scanned in ISO8601 format.
+          description: The time the asset was scanned in ISO8601 format.
         id:
           type: integer
           format: int64
@@ -307,14 +310,14 @@ components:
     AssetEventWithIP:
       type: object
       required:
-        - lastScanned
+        - scanTime
         - id
         - ip
       properties:
-        lastScanned:
+        scanTime:
           type: string
           format: date-time
-          description: The last time the asset was scanned in ISO8601 format.
+          description: The time the asset was scanned in ISO8601 format.
         id:
           type: integer
           format: int64

@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/golang/mock/gomock"
@@ -23,9 +24,9 @@ func TestFetchAssetsSuccess(t *testing.T) {
 	asset := Asset{
 		IP:      "127.0.0.1",
 		ID:      123456,
-		History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}},
+		History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}},
 	}
-	expectedAsset, err := asset.AssetPayloadToAssetEvent()
+	expectedAsset, err := asset.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
 	assert.NoError(t, err)
 	resp := SiteAssetsResponse{
 		Resources: []Asset{asset},
@@ -49,7 +50,7 @@ func TestFetchAssetsSuccess(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	var actualAsset domain.AssetEvent
 	for {
@@ -107,7 +108,7 @@ func TestFetchAssetsSuccessNoScans(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	for {
 		select {
@@ -137,15 +138,15 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 	asset1 := Asset{
 		IP:      "127.0.0.1",
 		ID:      123456,
-		History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}},
+		History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}},
 	}
-	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent()
+	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
 	asset2 := Asset{
 		IP:      "127.0.0.1",
 		ID:      123456,
-		History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}},
+		History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}},
 	}
-	expectedAsset2, _ := asset2.AssetPayloadToAssetEvent()
+	expectedAsset2, _ := asset2.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
 	page := Page{
 		TotalPages:     2,
 		TotalResources: 2,
@@ -178,7 +179,7 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	var assets []domain.AssetEvent
 	for {
@@ -208,16 +209,16 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
-	asset1 := Asset{IP: "127.0.0.1", ID: 1, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent()
-	asset2 := Asset{IP: "127.0.0.2", ID: 2, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset2, _ := asset1.AssetPayloadToAssetEvent()
-	asset3 := Asset{IP: "127.0.0.3", ID: 3, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset3, _ := asset1.AssetPayloadToAssetEvent()
-	asset4 := Asset{IP: "127.0.0.4", ID: 4, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset4, _ := asset1.AssetPayloadToAssetEvent()
-	asset5 := Asset{IP: "127.0.0.5", ID: 5, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset5, _ := asset1.AssetPayloadToAssetEvent()
+	asset1 := Asset{IP: "127.0.0.1", ID: 1, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
+	asset2 := Asset{IP: "127.0.0.2", ID: 2, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset2, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
+	asset3 := Asset{IP: "127.0.0.3", ID: 3, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset3, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
+	asset4 := Asset{IP: "127.0.0.4", ID: 4, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset4, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
+	asset5 := Asset{IP: "127.0.0.5", ID: 5, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset5, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
 	page := Page{
 		TotalPages:     3,
 		TotalResources: 5,
@@ -259,7 +260,7 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	var assets []domain.AssetEvent
 	for {
@@ -295,12 +296,12 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T)
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 
-	asset1 := Asset{IP: "127.0.0.1", ID: 1, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent()
-	asset2 := Asset{IP: "127.0.0.2", ID: 2, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset2, _ := asset1.AssetPayloadToAssetEvent()
-	asset3 := Asset{IP: "127.0.0.3", ID: 3, History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset3, _ := asset1.AssetPayloadToAssetEvent()
+	asset1 := Asset{IP: "127.0.0.1", ID: 1, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
+	asset2 := Asset{IP: "127.0.0.2", ID: 2, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset2, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
+	asset3 := Asset{IP: "127.0.0.3", ID: 3, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+	expectedAsset3, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
 	page := Page{
 		TotalPages:     3,
 		TotalResources: 5,
@@ -336,7 +337,7 @@ func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T)
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	var assets []domain.AssetEvent
 	var retErrors []error
@@ -385,7 +386,7 @@ func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	assert.IsType(t, &ErrorParsingJSONResponse{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
 }
@@ -407,7 +408,7 @@ func TestFetchAssetsFirstResponseError(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	assert.IsType(t, &ErrorFetchingAssets{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
 }
@@ -438,7 +439,7 @@ func TestFetchAssetsWithErrorReadingResponse(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	var actualError error
 
@@ -490,7 +491,7 @@ func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	// An empty Asset will be returned on the channel because we're reading from a closed channel here - this is expected
 	assert.Equal(t, domain.AssetEvent{}, <-assetChan)
@@ -512,7 +513,7 @@ func TestFetchAssetsHTTPError(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	var actualError error
 
@@ -544,7 +545,7 @@ func TestFetchAssetsAssetPayloadToAssetEventError(t *testing.T) {
 	mockRT := NewMockRoundTripper(ctrl)
 
 	resp := SiteAssetsResponse{
-		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}},
+		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}},
 		Page: Page{
 			TotalPages:     1,
 			TotalResources: 1,
@@ -564,7 +565,7 @@ func TestFetchAssetsAssetPayloadToAssetEventError(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67")
+	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", int64(1))
 
 	var actualError error
 
@@ -599,7 +600,7 @@ func TestMakeRequestSuccess(t *testing.T) {
 	asset := Asset{
 		IP:      "127.0.0.1",
 		ID:      1,
-		History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
+		History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
 	resp := SiteAssetsResponse{
 		Resources: []Asset{asset},
 		Page:      Page{},
@@ -626,7 +627,7 @@ func TestMakeRequestSuccess(t *testing.T) {
 	defer close(errChan)
 
 	wg.Add(1)
-	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", int64(1), 100, assetChan, errChan)
 	wg.Wait()
 	assert.NotNil(t, <-assetChan)
 }
@@ -640,7 +641,7 @@ func TestMakeRequestStatUnscannedAssets(t *testing.T) {
 	assetScanned := Asset{
 		IP:      "127.0.0.1",
 		ID:      1,
-		History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-06-14T15:03:47.000Z"}}}
+		History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-06-14T15:03:47.000Z"}}}
 	assetUnscanned := Asset{
 		IP:      "127.0.0.2",
 		ID:      2,
@@ -671,7 +672,7 @@ func TestMakeRequestStatUnscannedAssets(t *testing.T) {
 	defer close(errChan)
 
 	wg.Add(1)
-	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", int64(1), 100, assetChan, errChan)
 	wg.Wait()
 	assert.Len(t, assetChan, 1)
 	assert.Len(t, errChan, 1)
@@ -701,7 +702,7 @@ func TestMakeRequestWithErrorReadingResponse(t *testing.T) {
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
-	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", int64(1), 100, assetChan, errChan)
 	wg.Wait()
 
 	close(assetChan)
@@ -730,7 +731,7 @@ func TestMakeRequestHTTPError(t *testing.T) {
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
-	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", int64(1), 100, assetChan, errChan)
 	wg.Wait()
 
 	close(assetChan)
@@ -746,7 +747,7 @@ func TestMakeRequestWithAssetPayloadToAssetEventError(t *testing.T) {
 	defer ctrl.Finish()
 	mockRT := NewMockRoundTripper(ctrl)
 	resp := SiteAssetsResponse{
-		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "1234-12-01T00:00:00Z"}}}},
+		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "1234-12-01T00:00:00Z"}}}},
 		Page:      Page{},
 	}
 	respJSON, _ := json.Marshal(resp)
@@ -768,7 +769,7 @@ func TestMakeRequestWithAssetPayloadToAssetEventError(t *testing.T) {
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
-	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", int64(1), 100, assetChan, errChan)
 	wg.Wait()
 
 	close(assetChan)
@@ -804,7 +805,7 @@ func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
 	errChan := make(chan error, 1)
 
 	wg.Add(1)
-	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", int64(1), 100, assetChan, errChan)
 	wg.Wait()
 
 	close(assetChan)
@@ -839,7 +840,7 @@ func TestMakeRequestWithNoResponse(t *testing.T) {
 	defer close(errChan)
 
 	wg.Add(1)
-	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", int64(1), 100, assetChan, errChan)
 	wg.Wait()
 	assert.IsType(t, &ErrorParsingJSONResponse{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
 }
@@ -868,7 +869,7 @@ func TestMakeRequestWithNotOKStatus(t *testing.T) {
 	defer close(errChan)
 
 	wg.Add(1)
-	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", 100, assetChan, errChan)
+	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", int64(1), 100, assetChan, errChan)
 	wg.Wait()
 	assert.IsType(t, &ErrorFetchingAssets{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
 }

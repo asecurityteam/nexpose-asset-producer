@@ -15,6 +15,7 @@ import (
 type ScanInfo struct {
 	// SiteID is the ID of the site that just got scanned
 	SiteID string `json:"siteID"`
+	ScanID int64  `json:"scanID"`
 }
 
 // NexposeScannedAssetProducer is a lambda handler that fetches Nexpose Assets and sends them to an event stream
@@ -31,7 +32,7 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 	logger := h.LogFn(ctx)
 	stater := h.StatFn(ctx)
 
-	assetChan, errChan := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
+	assetChan, errChan := h.AssetFetcher.FetchAssets(ctx, in.SiteID, in.ScanID)
 
 	var totalAssetsProduced float64
 
@@ -64,8 +65,10 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 				errChan = nil
 			} else {
 				switch err.(type) {
-				case *assetfetcher.NeverBeenScanned:
-					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "neverbeenscanned"))
+				case *assetfetcher.ScanIDForLastScanNotInAssetHistory:
+					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "noscantimeforscanid"))
+				case *assetfetcher.InvalidScanTime:
+					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "invalidscantime"))
 				case *assetfetcher.MissingRequiredInformation:
 					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "missingfields"))
 				default:

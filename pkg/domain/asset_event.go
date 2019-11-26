@@ -4,8 +4,8 @@ import "time"
 
 // AssetEvent contains all pertinent Nexpose Asset information for downstream services
 type AssetEvent struct {
-	// The last time this asset was scanned.
-	LastScanned time.Time
+	// The time the asset was scanned.
+	ScanTime time.Time
 	// The primary host name (local or FQDN) of the asset.
 	Hostname string
 	// The identifier of the asset.
