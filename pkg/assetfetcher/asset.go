@@ -318,10 +318,11 @@ func (a Asset) AssetPayloadToAssetEvent(scanTime time.Time) (domain.AssetEvent, 
 		return domain.AssetEvent{}, &MissingRequiredInformation{a.ID, a.IP, a.HostName, scanTime}
 	}
 	return domain.AssetEvent{
-		ID:       a.ID,
-		Hostname: a.HostName,
-		IP:       a.IP,
-		ScanTime: scanTime,
+		ID:          a.ID,
+		Hostname:    a.HostName,
+		IP:          a.IP,
+		ScanTime:    scanTime,
+		LastScanned: scanTime, // LastScanned will get removed as a part of PSD-306
 	}, nil
 }
 
