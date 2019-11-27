@@ -18,15 +18,15 @@ func TestGetScanTime(t *testing.T) {
 	}{
 		{
 			"single event",
-			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{AssetHistory{Type: "SCAN", ScanID: 1, Date: "2019-04-22T15:02:44.000Z"}}},
+			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{AssetHistory{Type: "SCAN", ScanID: "1", Date: "2019-04-22T15:02:44.000Z"}}},
 			time.Date(2019, time.April, 22, 15, 2, 44, 0, time.UTC),
 			nil,
 		},
 		{
 			"multiple events with different ScanIDs",
 			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{
-				AssetHistory{Type: "SCAN", ScanID: 2, Date: "2018-04-22T15:02:44.000Z"},
-				AssetHistory{Type: "SCAN", ScanID: 1, Date: "2019-04-22T15:02:44.000Z"},
+				AssetHistory{Type: "SCAN", ScanID: "2", Date: "2018-04-22T15:02:44.000Z"},
+				AssetHistory{Type: "SCAN", ScanID: "1", Date: "2019-04-22T15:02:44.000Z"},
 			}},
 			time.Date(2019, time.April, 22, 15, 2, 44, 0, time.UTC),
 			nil,
@@ -34,8 +34,8 @@ func TestGetScanTime(t *testing.T) {
 		{
 			"multiple events same ScanIDs different scan times",
 			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{
-				AssetHistory{Type: "SCAN", ScanID: 1, Date: "2019-04-22T15:02:44.000Z"},
-				AssetHistory{Type: "SCAN", ScanID: 1, Date: "2018-04-22T15:02:44.000Z"},
+				AssetHistory{Type: "SCAN", ScanID: "1", Date: "2019-04-22T15:02:44.000Z"},
+				AssetHistory{Type: "SCAN", ScanID: "1", Date: "2018-04-22T15:02:44.000Z"},
 			}},
 			time.Date(2019, time.April, 22, 15, 2, 44, 0, time.UTC),
 			nil,
@@ -43,49 +43,49 @@ func TestGetScanTime(t *testing.T) {
 		{
 			"invalid date",
 			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{
-				AssetHistory{Type: "SCAN", ScanID: 1, Date: "iamnotadate"},
+				AssetHistory{Type: "SCAN", ScanID: "1", Date: "iamnotadate"},
 			}},
 			time.Time{},
-			&InvalidScanTime{ScanID: 1, ScanTime: time.Time{}, AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: "", Inner: &time.ParseError{Value: "iamnotadate", Layout: time.RFC3339, ValueElem: "iamnotadate", LayoutElem: "2006"}}, //errors.New("parsing time \"iamnotadate\" as " + time.RFC3339 + ": cannot parse \"iamnotadate\" as \"2006\"")},
+			&InvalidScanTime{ScanID: "1", ScanTime: time.Time{}, AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: "", Inner: &time.ParseError{Value: "iamnotadate", Layout: time.RFC3339, ValueElem: "iamnotadate", LayoutElem: "2006"}}, //errors.New("parsing time \"iamnotadate\" as " + time.RFC3339 + ": cannot parse \"iamnotadate\" as \"2006\"")},
 		},
 		{
 			"invalid time signature",
 			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{
-				AssetHistory{Type: "SCAN", ScanID: 1, Date: "2018-02-05 01:02:03 +1234 UTC"},
+				AssetHistory{Type: "SCAN", ScanID: "1", Date: "2018-02-05 01:02:03 +1234 UTC"},
 			}},
 			time.Time{},
-			&InvalidScanTime{ScanID: 1, ScanTime: time.Time{}, AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: "", Inner: &time.ParseError{Value: "2018-02-05 01:02:03 +1234 UTC", Layout: time.RFC3339, ValueElem: " 01:02:03 +1234 UTC", LayoutElem: "T"}}, //errors.New("parsing time \"2018-02-05 01:02:03 +1234 UTC\" as " + time.RFC3339 + ": cannot parse \" 01:02:03 +1234 UTC\" as \"T\"")},
+			&InvalidScanTime{ScanID: "1", ScanTime: time.Time{}, AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: "", Inner: &time.ParseError{Value: "2018-02-05 01:02:03 +1234 UTC", Layout: time.RFC3339, ValueElem: " 01:02:03 +1234 UTC", LayoutElem: "T"}}, //errors.New("parsing time \"2018-02-05 01:02:03 +1234 UTC\" as " + time.RFC3339 + ": cannot parse \" 01:02:03 +1234 UTC\" as \"T\"")},
 		},
 		{
 			"zero scan time",
 			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{
-				AssetHistory{Type: "SCAN", ScanID: 1, Date: "0001-01-01T00:00:00.000Z"},
+				AssetHistory{Type: "SCAN", ScanID: "1", Date: "0001-01-01T00:00:00.000Z"},
 			}},
 			time.Time{},
-			&InvalidScanTime{ScanID: 1, ScanTime: time.Time{}, AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: "", Inner: errors.New("scan time is zero")},
+			&InvalidScanTime{ScanID: "1", ScanTime: time.Time{}, AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: "", Inner: errors.New("scan time is zero")},
 		},
 		{
 			"non-scan type",
-			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{AssetHistory{Type: "CREATE", ScanID: 1, Date: "2019-04-22T15:02:44.000Z"}}},
+			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{AssetHistory{Type: "CREATE", ScanID: "1", Date: "2019-04-22T15:02:44.000Z"}}},
 			time.Time{},
-			&ScanIDForLastScanNotInAssetHistory{ScanID: 1, AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: ""},
+			&ScanIDForLastScanNotInAssetHistory{ScanID: "1", AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: ""},
 		},
 		{
 			"no matching ScanID",
-			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{AssetHistory{Type: "SCAN", ScanID: 3, Date: "2019-04-22T15:02:44.000Z"}}},
+			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{AssetHistory{Type: "SCAN", ScanID: "3", Date: "2019-04-22T15:02:44.000Z"}}},
 			time.Time{},
-			&ScanIDForLastScanNotInAssetHistory{ScanID: 1, AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: ""},
+			&ScanIDForLastScanNotInAssetHistory{ScanID: "1", AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: ""},
 		},
 		{
 			"no ScanID",
 			Asset{ID: 1, IP: "127.0.0.1", History: assetHistoryEvents{AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}}},
 			time.Time{},
-			&ScanIDForLastScanNotInAssetHistory{ScanID: 1, AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: ""},
+			&ScanIDForLastScanNotInAssetHistory{ScanID: "1", AssetID: 1, AssetIP: "127.0.0.1", AssetHostname: ""},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			scanTime, err := test.asset.GetScanTime(1)
+			scanTime, err := test.asset.GetScanTime("1")
 			if err != nil {
 				assert.Equal(t, test.expectedError.Error(), err.Error())
 			}

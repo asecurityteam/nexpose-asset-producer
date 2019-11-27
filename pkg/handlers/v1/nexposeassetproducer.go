@@ -15,7 +15,8 @@ import (
 type ScanInfo struct {
 	// SiteID is the ID of the site that just got scanned
 	SiteID string `json:"siteID"`
-	ScanID int64  `json:"scanID"`
+	// ScanID is the ID of the scan that just completed
+	ScanID string `json:"scanID"`
 }
 
 // NexposeScannedAssetProducer is a lambda handler that fetches Nexpose Assets and sends them to an event stream

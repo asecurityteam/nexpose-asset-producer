@@ -35,7 +35,7 @@ func (m *MockAssetFetcher) EXPECT() *MockAssetFetcherMockRecorder {
 }
 
 // FetchAssets mocks base method
-func (m *MockAssetFetcher) FetchAssets(ctx context.Context, siteID string, scanID int64) (<-chan domain.AssetEvent, <-chan error) {
+func (m *MockAssetFetcher) FetchAssets(ctx context.Context, siteID string, scanID string) (<-chan domain.AssetEvent, <-chan error) {
 	ret := m.ctrl.Call(m, "FetchAssets", ctx, siteID, scanID)
 	ret0, _ := ret[0].(<-chan domain.AssetEvent)
 	ret1, _ := ret[1].(<-chan error)

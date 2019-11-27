@@ -53,12 +53,12 @@ func TestAssetFetcherErrors(t *testing.T) {
 		},
 		{
 			"InvalidScanTime",
-			&InvalidScanTime{1, scanTime, 123456, "ip", "host", errors.New("myError")},
+			&InvalidScanTime{"1", scanTime, 123456, "ip", "host", errors.New("myError")},
 			fmt.Sprintf("Invalid scan time. ScanID: 1, ScanTime: %v, AssetID: 123456, IP: ip, Hostname: host, Error: myError", scanTime),
 		},
 		{
 			"ScanIDForLastScanNotInAssetHistory",
-			&ScanIDForLastScanNotInAssetHistory{1, 123456, "ip", "host"},
+			&ScanIDForLastScanNotInAssetHistory{"1", 123456, "ip", "host"},
 			fmt.Sprintf("Asset was not scanned during the scan with ScanID: 1, AssetID: 123456, IP: ip, Hostname: host"),
 		},
 	}

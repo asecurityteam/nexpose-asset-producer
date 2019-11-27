@@ -112,7 +112,7 @@ type AssetHistory struct { // The date the asset information was collected or ch
 	// Additional information describing the change.
 	Description string `json:"description,omitempty"`
 	// If a scan-oriented change, the identifier of the corresponding scan the asset was scanned in.
-	ScanID int64 `json:"scanId,omitempty"`
+	ScanID string `json:"scanId,omitempty"`
 	// The type of change
 	Type string `json:"type,omitempty"`
 	// If a vulnerability exception change, the login name of the user that performed the operation.
@@ -328,7 +328,7 @@ type assetHistoryEvents []AssetHistory
 
 // GetScanTime searches through the asset's event history for a scan event with the ScanID
 // that matches the ScanID of the scan completion event that triggered the pipeline.
-func (a Asset) GetScanTime(scanID int64) (time.Time, error) {
+func (a Asset) GetScanTime(scanID string) (time.Time, error) {
 	for _, evt := range a.History {
 		if evt.Type == "SCAN" {
 			if evt.ScanID == scanID {

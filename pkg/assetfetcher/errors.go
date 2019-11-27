@@ -74,7 +74,7 @@ func (e *MissingRequiredInformation) Error() string {
 
 // InvalidScanTime represents an error that occurs when an asset's scan time invalid
 type InvalidScanTime struct {
-	ScanID        int64
+	ScanID        string
 	ScanTime      time.Time
 	AssetID       int64
 	AssetIP       string
@@ -91,7 +91,7 @@ func (e *InvalidScanTime) Error() string {
 // the ScanID for the notification for a completed scan. This means that the asset is in the site that was scanned,
 // but the asset itself was not scanned.
 type ScanIDForLastScanNotInAssetHistory struct {
-	ScanID        int64
+	ScanID        string
 	AssetID       int64
 	AssetIP       string
 	AssetHostname string

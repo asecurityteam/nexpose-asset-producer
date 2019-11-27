@@ -60,7 +60,7 @@ type NexposeAssetFetcher struct {
 // Assets will be added to the AssetEvent channel as they're returned from Nexpose
 // and errors will be added to the error channel if there's an error fetching
 // or reading the asset. It's the responsibility of the caller to check if a channel is closed before reading from it.
-func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string, scanID int64) (<-chan domain.AssetEvent, <-chan error) {
+func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string, scanID string) (<-chan domain.AssetEvent, <-chan error) {
 	errChan := make(chan error, 1)
 	defer close(errChan)
 
@@ -131,7 +131,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string, sc
 	return pagedAssetChan, pagedErrChan
 }
 
-func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, scanID int64, page int, assetChan chan domain.AssetEvent, errChan chan error) {
+func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, scanID string, page int, assetChan chan domain.AssetEvent, errChan chan error) {
 	defer wg.Done()
 
 	req := c.newNexposeSiteAssetsRequest(siteID, page)
