@@ -59,40 +59,45 @@ func (e *ErrorFetchingAssets) Error() string {
 	return fmt.Sprintf("error fetching assets from Nexpose %v", e.Inner)
 }
 
-// ErrorConvertingAssetPayload represents an error we get when trying to convert a Nexpose Asset
-// payload to AssetEvent
-type ErrorConvertingAssetPayload struct {
-	AssetID int64
-	Inner   error
-}
-
-// Error returns an ErrorConvertingAssetPayload
-func (e *ErrorConvertingAssetPayload) Error() string {
-	return fmt.Sprintf("error converting asset %v payload to event %v", e.AssetID, e.Inner)
-}
-
 // MissingRequiredInformation represents an error we get if the ID, or IP and Hostname
 type MissingRequiredInformation struct {
-	AssetID          int64
-	AssetIP          string
-	AssetHostname    string
-	AssetLastScanned time.Time
+	AssetID       int64
+	AssetIP       string
+	AssetHostname string
+	AssetScanTime time.Time
 }
 
 // Error returns an MissingRequiredFields
 func (e *MissingRequiredInformation) Error() string {
-	return fmt.Sprintf("required fields are missing. ID: %v, IP: %s, Hostname: %s, LastScanned: %v", e.AssetID, e.AssetIP, e.AssetHostname, e.AssetLastScanned)
+	return fmt.Sprintf("required fields are missing. ID: %v, IP: %s, Hostname: %s, ScanTime: %v", e.AssetID, e.AssetIP, e.AssetHostname, e.AssetScanTime)
 }
 
-// NeverBeenScanned represents an error that occurs when an asset has not been scanned, or there is a failure
-// in finding last recent scan
-type NeverBeenScanned struct {
+// InvalidScanTime represents an error that occurs when an asset's scan time invalid
+type InvalidScanTime struct {
+	ScanID        string
+	ScanTime      time.Time
+	AssetID       int64
+	AssetIP       string
+	AssetHostname string
+	Inner         error
+}
+
+// Error returns an InvalidScanTime
+func (e *InvalidScanTime) Error() string {
+	return fmt.Sprintf("Invalid scan time. ScanID: %v, ScanTime: %v, AssetID: %v, IP: %s, Hostname: %s, Error: %s", e.ScanID, e.ScanTime, e.AssetID, e.AssetIP, e.AssetHostname, e.Inner.Error())
+}
+
+// ScanIDForLastScanNotInAssetHistory represents an error that occurs when an asset's history doesn't contain
+// the ScanID for the notification for a completed scan. This means that the asset is in the site that was scanned,
+// but the asset itself was not scanned.
+type ScanIDForLastScanNotInAssetHistory struct {
+	ScanID        string
 	AssetID       int64
 	AssetIP       string
 	AssetHostname string
 }
 
-// Error returns an NeverBeenScanned
-func (e *NeverBeenScanned) Error() string {
-	return fmt.Sprintf("Asset has not been scanned. ID: %v, IP: %s, Hostname: %s", e.AssetID, e.AssetIP, e.AssetHostname)
+// Error returns an ScanIdForLastScanNotInAssetHistory
+func (e *ScanIDForLastScanNotInAssetHistory) Error() string {
+	return fmt.Sprintf("Asset was not scanned during the scan with ScanID: %v, AssetID: %v, IP: %s, Hostname: %s", e.ScanID, e.AssetID, e.AssetIP, e.AssetHostname)
 }

@@ -20,19 +20,19 @@ type AssetProducer struct {
 }
 
 type assetEventPayload struct {
-	LastScanned time.Time `json:"lastScanned,omitempty"`
-	Hostname    string    `json:"hostname,omitempty"`
-	ID          int64     `json:"id,omitempty"`
-	IP          string    `json:"ip,omitempty"`
+	ScanTime time.Time `json:"scantime,omitempty"`
+	Hostname string    `json:"hostname,omitempty"`
+	ID       int64     `json:"id,omitempty"`
+	IP       string    `json:"ip,omitempty"`
 }
 
 // Produce publishes sends the asset event to the streaming appliance
 func (p *AssetProducer) Produce(ctx context.Context, asset domain.AssetEvent) error {
 	payload := assetEventPayload{
-		LastScanned: asset.LastScanned,
-		Hostname:    asset.Hostname,
-		ID:          asset.ID,
-		IP:          asset.IP,
+		ScanTime: asset.ScanTime,
+		Hostname: asset.Hostname,
+		ID:       asset.ID,
+		IP:       asset.IP,
 	}
 	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequest(http.MethodPost, p.Endpoint.String(), bytes.NewReader(body))

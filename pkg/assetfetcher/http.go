@@ -55,11 +55,12 @@ type NexposeAssetFetcher struct {
 	StatFn domain.StatFn
 }
 
-// FetchAssets gets all the assets for a given site ID from Nexpose. This function is asynchronous, which means
-// you can start listening to the AssetEvent and error channels immediately. Assets will be added to the AssetEvent
-// channel as they're returned from Nexpose and errors will be added to the error channel if there's an error fetching
+// FetchAssets gets all the assets for a given site ID from Nexpose by calling `/api/3/sites/{id}/assets`.
+// This function is asynchronous, which means you can start listening to the AssetEvent and error channels immediately.
+// Assets will be added to the AssetEvent channel as they're returned from Nexpose
+// and errors will be added to the error channel if there's an error fetching
 // or reading the asset. It's the responsibility of the caller to check if a channel is closed before reading from it.
-func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan domain.AssetEvent, <-chan error) {
+func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string, scanID string) (<-chan domain.AssetEvent, <-chan error) {
 	errChan := make(chan error, 1)
 	defer close(errChan)
 
@@ -98,7 +99,12 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	pagedAssetChan := make(chan domain.AssetEvent, siteAssetResp.Page.TotalResources)
 	pagedErrChan := make(chan error, siteAssetResp.Page.TotalResources)
 	for _, asset := range siteAssetResp.Resources {
-		assetEvent, err := asset.AssetPayloadToAssetEvent()
+		scanTime, err := asset.GetScanTime(scanID)
+		if err != nil {
+			pagedErrChan <- err
+			continue
+		}
+		assetEvent, err := asset.AssetPayloadToAssetEvent(scanTime)
 		if err != nil {
 			pagedErrChan <- err
 		} else {
@@ -113,7 +119,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	var wg sync.WaitGroup
 	for currentPage := 1; currentPage < totalPages; currentPage++ {
 		wg.Add(1)
-		go c.makeRequest(ctx, &wg, siteID, currentPage, pagedAssetChan, pagedErrChan)
+		go c.makeRequest(ctx, &wg, siteID, scanID, currentPage, pagedAssetChan, pagedErrChan)
 	}
 
 	go func() {
@@ -125,7 +131,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<
 	return pagedAssetChan, pagedErrChan
 }
 
-func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, page int, assetChan chan domain.AssetEvent, errChan chan error) {
+func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGroup, siteID string, scanID string, page int, assetChan chan domain.AssetEvent, errChan chan error) {
 	defer wg.Done()
 
 	req := c.newNexposeSiteAssetsRequest(siteID, page)
@@ -153,7 +159,12 @@ func (c *NexposeAssetFetcher) makeRequest(ctx context.Context, wg *sync.WaitGrou
 		return
 	}
 	for _, asset := range siteAssetResp.Resources {
-		assetEvent, err := asset.AssetPayloadToAssetEvent()
+		scanTime, err := asset.GetScanTime(scanID)
+		if err != nil {
+			errChan <- err
+			continue
+		}
+		assetEvent, err := asset.AssetPayloadToAssetEvent(scanTime)
 		if err != nil {
 			errChan <- err
 		} else {

@@ -6,10 +6,9 @@ package v1
 
 import (
 	context "context"
-	reflect "reflect"
-
 	domain "github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // MockAssetFetcher is a mock of AssetFetcher interface
@@ -36,16 +35,14 @@ func (m *MockAssetFetcher) EXPECT() *MockAssetFetcherMockRecorder {
 }
 
 // FetchAssets mocks base method
-func (m *MockAssetFetcher) FetchAssets(ctx context.Context, siteID string) (<-chan domain.AssetEvent, <-chan error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchAssets", ctx, siteID)
+func (m *MockAssetFetcher) FetchAssets(ctx context.Context, siteID string, scanID string) (<-chan domain.AssetEvent, <-chan error) {
+	ret := m.ctrl.Call(m, "FetchAssets", ctx, siteID, scanID)
 	ret0, _ := ret[0].(<-chan domain.AssetEvent)
 	ret1, _ := ret[1].(<-chan error)
 	return ret0, ret1
 }
 
 // FetchAssets indicates an expected call of FetchAssets
-func (mr *MockAssetFetcherMockRecorder) FetchAssets(ctx, siteID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchAssets", reflect.TypeOf((*MockAssetFetcher)(nil).FetchAssets), ctx, siteID)
+func (mr *MockAssetFetcherMockRecorder) FetchAssets(ctx, siteID, scanID interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchAssets", reflect.TypeOf((*MockAssetFetcher)(nil).FetchAssets), ctx, siteID, scanID)
 }
