@@ -293,11 +293,8 @@ components:
       required:
         - id
         - hostname
+        - scanTime
       properties:
-        lastScanned:
-          type: string
-          format: date-time
-          description: The time the asset was scanned in ISO8601 format. LastScanned will get removed as a part of PSD-306
         scanTime:
           type: string
           format: date-time
@@ -315,11 +312,8 @@ components:
       required:
         - id
         - ip
+        - scanTime
       properties:
-        lastScanned:
-          type: string
-          format: date-time
-          description: The time the asset was scanned in ISO8601 format. LastScanned will get removed as a part of PSD-306
         scanTime:
           type: string
           format: date-time
