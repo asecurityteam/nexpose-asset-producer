@@ -56,11 +56,9 @@ type NexposeAssetFetcher struct {
 	StatFn domain.StatFn
 }
 
-// FetchAssets gets all the assets for a given site ID from Nexpose by calling `/api/3/sites/{id}/assets`.
-// This function is asynchronous, which means you can start listening to the AssetEvent and error channels immediately.
-// Assets will be added to the AssetEvent channel as they're returned from Nexpose
-// and errors will be added to the error channel if there's an error fetching
-// or reading the asset. It's the responsibility of the caller to check if a channel is closed before reading from it.
+// FetchAssets gets all the assets for a given site ID from Nexpose by calling `/api/3/sites/{id}/assets`, specifically from
+// fetchAllNexposeSiteAssets. Afterwards, this function will loop through all the assets returned from fetchAllNexposeSiteAssets.
+// This function achieves fan-out with no partial failure for retrieving assets
 func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string, scanID string) (<-chan domain.AssetEvent, <-chan error) {
 	errChan := make(chan error, 1)
 	defer close(errChan)
@@ -121,13 +119,17 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 	return req
 }
 
-// fetchNexposeSiteAssetsPage makes a call to Nexpose to retrieve and return a page of assets in the form of SiteAssetsResponse
+// fetchAllNexposeSiteAssets returns all assets from a given Nexpose site. This function first makes a call
+// to retrieve the first page of assets in a Nexpose site, then concurrently retrieves all pages after knowing the total pages.
+// The function uses a fanout pattern with no partial error
 func (c *NexposeAssetFetcher) fetchAllNexposeSiteAssets(ctx context.Context, siteID string) ([]Asset, error) {
 	// have to page through to get all the assets, start with page 0
 	// make the first call to Nexpose to get the total number of pages we'll
 	var currentPage = 0
+	ctx, cancel := context.WithCancel(ctx)
 	firstPageOfAssets, initialErr := c.fetchNexposeSiteAssetsPage(ctx, currentPage, siteID)
 	if initialErr != nil {
+		defer cancel()
 		return []Asset{}, errors.New("failed initial!")
 	}
 
@@ -137,16 +139,17 @@ func (c *NexposeAssetFetcher) fetchAllNexposeSiteAssets(ctx context.Context, sit
 	pageAssetChan := make(chan SiteAssetsResponse, totalPages-1)
 	pageErrChan := make(chan error, totalPages-1)
 	for currentPage := 1; currentPage < totalPages; currentPage++ {
-		// go c.makeRequest(ctx, &wg, siteID, scanID, currentPage, pagedAssetChan, pagedErrChan)
 		go func(ctx context.Context, page int, site string) {
 			pageOfAssets, err := c.fetchNexposeSiteAssetsPage(ctx, page, site)
 			if err != nil {
+				defer cancel()
 				pageErrChan <- err
 				return
 			}
 			pageAssetChan <- pageOfAssets
 		}(ctx, currentPage, siteID)
 	}
+	defer cancel()
 
 	for currentPage := 1; currentPage < totalPages; currentPage++ {
 		select {
