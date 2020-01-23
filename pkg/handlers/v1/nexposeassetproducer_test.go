@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/assetfetcher"
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNexposeAssetProducerHandler(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	assetFetcher := NewMockAssetFetcher(mockCtrl)
+	mockAssetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
 
 	assetChan := make(chan domain.AssetEvent, 1)
@@ -28,12 +30,12 @@ func TestNexposeAssetProducerHandler(t *testing.T) {
 	close(assetChan)
 	close(errChan)
 
-	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345", "1").Return(assetChan, errChan)
+	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345", "1").Return(assetChan, errChan)
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 
 	handler := NexposeScannedAssetProducer{
 		Producer:     producer,
-		AssetFetcher: assetFetcher,
+		AssetFetcher: mockAssetFetcher,
 		LogFn:        func(ctx context.Context) domain.Logger { return NewMockLogger(mockCtrl) },
 		StatFn:       MockStatFn,
 	}
@@ -42,7 +44,8 @@ func TestNexposeAssetProducerHandler(t *testing.T) {
 		SiteID: "12345",
 		ScanID: "1",
 	}
-	handler.Handle(context.Background(), scanInfo)
+	err := handler.Handle(context.Background(), scanInfo)
+	assert.Nil(t, err)
 }
 
 // This test not only handles testing multiple incoming assets, but also
@@ -56,7 +59,7 @@ func TestNexposeAssetProducerHandlerMultipleAssets(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	assetFetcher := NewMockAssetFetcher(mockCtrl)
+	mockAssetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
 	mockStatFn := NewMockStat(mockCtrl)
 
@@ -70,12 +73,12 @@ func TestNexposeAssetProducerHandlerMultipleAssets(t *testing.T) {
 	close(assetChan)
 	close(errChan)
 
-	assetFetcher.EXPECT().FetchAssets(gomock.Any(), siteID, scanID).Return(assetChan, errChan)
+	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), siteID, scanID).Return(assetChan, errChan)
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil).Times(numberOfGoRoutines)
 	mockStatFn.EXPECT().Count("totalassetsproduced", float64(numberOfGoRoutines), fmt.Sprintf("site:%s", siteID)).Times(1)
 	handler := NexposeScannedAssetProducer{
 		Producer:     producer,
-		AssetFetcher: assetFetcher,
+		AssetFetcher: mockAssetFetcher,
 		LogFn:        func(ctx context.Context) domain.Logger { return NewMockLogger(mockCtrl) },
 		StatFn:       func(ctx context.Context) domain.Stat { return mockStatFn },
 	}
@@ -84,7 +87,8 @@ func TestNexposeAssetProducerHandlerMultipleAssets(t *testing.T) {
 		SiteID: siteID,
 		ScanID: "1",
 	}
-	handler.Handle(context.Background(), scanInfo)
+	err := handler.Handle(context.Background(), scanInfo)
+	assert.Nil(t, err)
 }
 
 func TestNexposeAssetProducerHandlerError(t *testing.T) {
@@ -92,7 +96,7 @@ func TestNexposeAssetProducerHandlerError(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockLogger := NewMockLogger(mockCtrl)
 
-	assetFetcher := NewMockAssetFetcher(mockCtrl)
+	mockAssetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
 
 	assetChan := make(chan domain.AssetEvent, 1)
@@ -102,13 +106,13 @@ func TestNexposeAssetProducerHandlerError(t *testing.T) {
 	close(assetChan)
 	close(errChan)
 
-	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345", "1").Return(assetChan, errChan)
+	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345", "1").Return(assetChan, errChan)
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil).Times(0)
 	mockLogger.EXPECT().Error(gomock.Any())
 
 	handler := NexposeScannedAssetProducer{
 		Producer:     producer,
-		AssetFetcher: assetFetcher,
+		AssetFetcher: mockAssetFetcher,
 		LogFn:        func(ctx context.Context) domain.Logger { return mockLogger },
 		StatFn:       MockStatFn,
 	}
@@ -117,7 +121,8 @@ func TestNexposeAssetProducerHandlerError(t *testing.T) {
 		SiteID: "12345",
 		ScanID: "1",
 	}
-	handler.Handle(context.Background(), scanInfo)
+	err := handler.Handle(context.Background(), scanInfo)
+	assert.Nil(t, err)
 }
 
 func TestNexposeAssetProducerHandlerWithAssetsAndErrors(t *testing.T) {
@@ -125,7 +130,7 @@ func TestNexposeAssetProducerHandlerWithAssetsAndErrors(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockLogger := NewMockLogger(mockCtrl)
 
-	assetFetcher := NewMockAssetFetcher(mockCtrl)
+	mockAssetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
 
 	assetChan := make(chan domain.AssetEvent, 2)
@@ -141,13 +146,13 @@ func TestNexposeAssetProducerHandlerWithAssetsAndErrors(t *testing.T) {
 	close(assetChan)
 	close(errChan)
 
-	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345", "1").Return(assetChan, errChan)
+	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345", "1").Return(assetChan, errChan)
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil).Times(2)
 	mockLogger.EXPECT().Error(gomock.Any())
 
 	handler := NexposeScannedAssetProducer{
 		Producer:     producer,
-		AssetFetcher: assetFetcher,
+		AssetFetcher: mockAssetFetcher,
 		LogFn:        func(ctx context.Context) domain.Logger { return mockLogger },
 		StatFn:       MockStatFn,
 	}
@@ -156,7 +161,8 @@ func TestNexposeAssetProducerHandlerWithAssetsAndErrors(t *testing.T) {
 		SiteID: "12345",
 		ScanID: "1",
 	}
-	handler.Handle(context.Background(), scanInfo)
+	err = handler.Handle(context.Background(), scanInfo)
+	assert.Nil(t, err)
 }
 
 func TestNexposeAssetProducerHandlerProducerError(t *testing.T) {
@@ -164,7 +170,7 @@ func TestNexposeAssetProducerHandlerProducerError(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockLogger := NewMockLogger(mockCtrl)
 
-	assetFetcher := NewMockAssetFetcher(mockCtrl)
+	mockAssetFetcher := NewMockAssetFetcher(mockCtrl)
 	producer := NewMockProducer(mockCtrl)
 
 	assetChan := make(chan domain.AssetEvent, 1)
@@ -178,13 +184,13 @@ func TestNexposeAssetProducerHandlerProducerError(t *testing.T) {
 	close(assetChan)
 	close(errChan)
 
-	assetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345", "1").Return(assetChan, errChan)
+	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345", "1").Return(assetChan, errChan)
 	producer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(errors.New("HTTPError"))
 	mockLogger.EXPECT().Error(gomock.Any())
 
 	handler := NexposeScannedAssetProducer{
 		Producer:     producer,
-		AssetFetcher: assetFetcher,
+		AssetFetcher: mockAssetFetcher,
 		LogFn:        func(ctx context.Context) domain.Logger { return mockLogger },
 		StatFn:       MockStatFn,
 	}
@@ -193,5 +199,39 @@ func TestNexposeAssetProducerHandlerProducerError(t *testing.T) {
 		SiteID: "12345",
 		ScanID: "1",
 	}
-	handler.Handle(context.Background(), scanInfo)
+	err := handler.Handle(context.Background(), scanInfo)
+	assert.Nil(t, err)
+}
+
+func TestNexposeAssetProducerHandlerFetchAssetsError(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockLogger := NewMockLogger(mockCtrl)
+
+	mockAssetFetcher := NewMockAssetFetcher(mockCtrl)
+	producer := NewMockProducer(mockCtrl)
+
+	assetChan := make(chan domain.AssetEvent, 1)
+	errChan := make(chan error, 1)
+
+	errChan <- &assetfetcher.ErrorFetchingAssets{}
+	close(assetChan)
+	close(errChan)
+
+	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345", "1").Return(assetChan, errChan)
+	mockLogger.EXPECT().Error(gomock.Any())
+
+	handler := NexposeScannedAssetProducer{
+		Producer:     producer,
+		AssetFetcher: mockAssetFetcher,
+		LogFn:        func(ctx context.Context) domain.Logger { return mockLogger },
+		StatFn:       MockStatFn,
+	}
+
+	scanInfo := ScanInfo{
+		SiteID: "12345",
+		ScanID: "1",
+	}
+	err := handler.Handle(context.Background(), scanInfo)
+	assert.IsType(t, &assetfetcher.ErrorFetchingAssets{}, err)
 }

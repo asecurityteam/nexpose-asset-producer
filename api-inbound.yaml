@@ -98,7 +98,17 @@ paths:
           async: false
           request: '#! json .Request.Body !#'
           success: '{"status": 204, "bodyPassthrough": true}'
-          error: '{"status": 500, "bodyPassthrough": true}'
+          error: >
+            {
+              "status":
+                #! if eq .Response.Body.errorType "ErrorFetchingAssets" !# 502,
+                #! end !#
+              "body": {
+                #! if eq .Response.Body.errorType "ErrorFetchingAssets" !#
+                "code": 502, "status": "Bad Gateway",
+              }
+            }
+
 components:
   schemas:
     ScanNotification:
