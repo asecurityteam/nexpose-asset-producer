@@ -29,7 +29,7 @@ type NexposeScannedAssetProducer struct {
 
 // Handle is an AWS Lambda handler that takes in a SiteID for a Nexpose scan that has completed,
 // get all the assets in the site that was scanned and produces each asset to a stream
-func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
+func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) error {
 	logger := h.LogFn(ctx)
 	stater := h.StatFn(ctx)
 
@@ -66,6 +66,13 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 				errChan = nil
 			} else {
 				switch err.(type) {
+				// in the event of an ErrorFetchingAssets case, we are guaranteed that we have not produced ANY assets.
+				// this is based on retrieving all assets prior to producing, fanout with no partial failure
+				case *assetfetcher.ErrorFetchingAssets:
+					logger.Error(logs.AssetFetchFail{
+						Reason: err.Error(),
+					})
+					return err
 				case *assetfetcher.ScanIDForLastScanNotInAssetHistory:
 					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "noscantimeforscanid"))
 				case *assetfetcher.InvalidScanTime:
@@ -86,4 +93,5 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
 	}
 	wg.Wait()
 	stater.Count("totalassetsproduced", totalAssetsProduced, fmt.Sprintf("site:%s", in.SiteID))
+	return nil
 }
