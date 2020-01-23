@@ -51,12 +51,14 @@ func (e *NexposeHTTPRequestError) Error() string {
 
 // ErrorFetchingAssets represents an error we get when trying to fetch assets
 type ErrorFetchingAssets struct {
-	Inner error
+	Inner  error
+	Page   int
+	SiteID string
 }
 
 // Error returns an ErrorFetchingAssets
 func (e *ErrorFetchingAssets) Error() string {
-	return fmt.Sprintf("error fetching assets from Nexpose %v", e.Inner)
+	return fmt.Sprintf("error fetching assets site: %v, on page %d, from Nexpose. %v", e.SiteID, e.Page, e.Inner)
 }
 
 // MissingRequiredInformation represents an error we get if the ID, or IP and Hostname

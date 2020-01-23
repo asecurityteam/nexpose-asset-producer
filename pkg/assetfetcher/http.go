@@ -3,7 +3,6 @@ package assetfetcher
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -63,7 +62,6 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string, sc
 	errChan := make(chan error, 1)
 	defer close(errChan)
 
-	stater := c.StatFn(ctx)
 	allAssetsInSite, err := c.fetchAllNexposeSiteAssets(ctx, siteID)
 	if err != nil {
 		errChan <- err
@@ -71,6 +69,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string, sc
 	}
 
 	numTotalAssets := len(allAssetsInSite)
+	stater := c.StatFn(ctx)
 	stater.Count("totalassets", float64(numTotalAssets), fmt.Sprintf("site:%s", siteID))
 	pagedAssetChan := make(chan domain.AssetEvent, numTotalAssets)
 	pagedErrChan := make(chan error, numTotalAssets)
@@ -91,7 +90,6 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string, sc
 				return
 			}
 			pagedAssetChan <- assetEvent
-
 		}(asset)
 
 	}
@@ -105,20 +103,6 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string, sc
 	return pagedAssetChan, pagedErrChan
 }
 
-// newNexposeSiteAssetsRequest builds URL we'll use to make the request to Nexpose's site assets endpoint
-func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page int) *http.Request {
-	u, _ := url.Parse(c.Host.String())
-	u.Path = path.Join(u.Path, basePath, nexposeSite, siteID, nexposeAssets)
-	q := u.Query()
-	q.Set(pageQueryParam, fmt.Sprint(page))
-	q.Set(sizeQueryParam, fmt.Sprint(c.PageSize))
-	u.RawQuery = q.Encode()
-	// the only time http.NewRequest returns an error is if there's a parsing error,
-	// which we already checked for earlier, so no need to check it again
-	req, _ := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
-	return req
-}
-
 // fetchAllNexposeSiteAssets returns all assets from a given Nexpose site. This function first makes a call
 // to retrieve the first page of assets in a Nexpose site, then concurrently retrieves all pages after knowing the total pages.
 // The function uses a fanout pattern with no partial error
@@ -130,20 +114,20 @@ func (c *NexposeAssetFetcher) fetchAllNexposeSiteAssets(ctx context.Context, sit
 	firstPageOfAssets, initialErr := c.fetchNexposeSiteAssetsPage(ctx, currentPage, siteID)
 	if initialErr != nil {
 		defer cancel()
-		return []Asset{}, errors.New("failed initial!")
+		return []Asset{}, &ErrorFetchingAssets{Inner: initialErr, Page: 0, SiteID: siteID}
 	}
 
 	totalPages := firstPageOfAssets.Page.TotalPages
 	totalAssets := firstPageOfAssets.Resources
 
-	pageAssetChan := make(chan SiteAssetsResponse, totalPages-1)
-	pageErrChan := make(chan error, totalPages-1)
+	pageAssetChan := make(chan SiteAssetsResponse, totalPages)
+	pageErrChan := make(chan error, totalPages)
 	for currentPage := 1; currentPage < totalPages; currentPage++ {
 		go func(ctx context.Context, page int, site string) {
 			pageOfAssets, err := c.fetchNexposeSiteAssetsPage(ctx, page, site)
 			if err != nil {
 				defer cancel()
-				pageErrChan <- err
+				pageErrChan <- &ErrorFetchingAssets{Inner: err, Page: page, SiteID: siteID}
 				return
 			}
 			pageAssetChan <- pageOfAssets
@@ -165,31 +149,48 @@ func (c *NexposeAssetFetcher) fetchAllNexposeSiteAssets(ctx context.Context, sit
 
 // fetchNexposeSiteAssetsPage makes a call to Nexpose to retrieve and return a particular page of assets in the form of SiteAssetsResponse
 func (c *NexposeAssetFetcher) fetchNexposeSiteAssetsPage(ctx context.Context, page int, siteID string) (SiteAssetsResponse, error) {
-	req := c.newNexposeSiteAssetsRequest(siteID, page)
+	req, err := c.newNexposeSiteAssetsRequest(siteID, page)
+	if err != nil {
+		return SiteAssetsResponse{}, err
+	}
 
 	res, err := c.HTTPClient.Do(req.WithContext(ctx))
 	if err != nil {
-		return SiteAssetsResponse{}, errors.New("http failure!")
+		return SiteAssetsResponse{}, &NexposeHTTPRequestError{NexposeURL: req.URL.String(), Inner: err}
 	}
 	defer res.Body.Close()
 	respBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return SiteAssetsResponse{}, errors.New("http failure!")
-
+		return SiteAssetsResponse{}, &ErrorReadingNexposeResponse{NexposeURL: req.URL.String(), Inner: err}
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return SiteAssetsResponse{}, errors.New("http failure!")
-
+		return SiteAssetsResponse{}, &NexposeHTTPRequestError{NexposeURL: req.URL.String(), Inner: fmt.Errorf("bad response code: %v", res.StatusCode)}
 	}
 
 	var siteAssetResp SiteAssetsResponse
 	if err := json.Unmarshal(respBody, &siteAssetResp); err != nil {
-		return SiteAssetsResponse{}, errors.New("http failure!")
-
+		return SiteAssetsResponse{}, &ErrorParsingJSONResponse{NexposeURL: req.URL.String(), Inner: err}
 	}
 
-	return SiteAssetsResponse{}, nil
+	return siteAssetResp, nil
+}
+
+// newNexposeSiteAssetsRequest builds URL we'll use to make the request to Nexpose's site assets endpoint
+func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page int) (*http.Request, error) {
+	u, _ := url.Parse(c.Host.String())
+	u.Path = path.Join(u.Path, basePath, nexposeSite, siteID, nexposeAssets)
+	q := u.Query()
+	q.Set(pageQueryParam, fmt.Sprint(page))
+	q.Set(sizeQueryParam, fmt.Sprint(c.PageSize))
+	u.RawQuery = q.Encode()
+	// the only time http.NewRequest returns an error is if there's a parsing error,
+	// which we already checked for earlier, so no need to check it again
+	req, err := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
+	if err != nil {
+		return nil, &URLParsingError{Inner: err, NexposeURL: u.String()}
+	}
+	return req, nil
 }
 
 // CheckDependencies makes a call to the nexpose endppoint "/api/3".
