@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/golang/mock/gomock"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -204,192 +204,6 @@ func TestFetchAssetsSuccessWithOneMakeRequestCall(t *testing.T) {
 	assert.Equal(t, []domain.AssetEvent{expectedAsset1, expectedAsset2}, assets)
 }
 
-func TestFetchAssetsSuccessWithMultipleMakeRequestsCalled(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockRT := NewMockRoundTripper(ctrl)
-	asset1 := Asset{IP: "127.0.0.1", ID: 1, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
-	asset2 := Asset{IP: "127.0.0.2", ID: 2, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset2, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
-	asset3 := Asset{IP: "127.0.0.3", ID: 3, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset3, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
-	asset4 := Asset{IP: "127.0.0.4", ID: 4, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset4, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
-	asset5 := Asset{IP: "127.0.0.5", ID: 5, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset5, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
-	page := Page{
-		TotalPages:     3,
-		TotalResources: 5,
-	}
-	page1Resp := SiteAssetsResponse{
-		Resources: []Asset{asset1, asset2},
-		Page:      page,
-	}
-	page2Resp := SiteAssetsResponse{
-		Resources: []Asset{asset3, asset4},
-		Page:      page,
-	}
-	page3Resp := SiteAssetsResponse{
-		Resources: []Asset{asset5},
-		Page:      page,
-	}
-	respJSON1, _ := json.Marshal(page1Resp)
-	respJSON2, _ := json.Marshal(page2Resp)
-	respJSON3, _ := json.Marshal(page3Resp)
-
-	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(respJSON1)),
-		StatusCode: http.StatusOK,
-	}, nil)
-	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(respJSON2)),
-		StatusCode: http.StatusOK,
-	}, nil)
-	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(respJSON3)),
-		StatusCode: http.StatusOK,
-	}, nil)
-
-	host, _ := url.Parse("http://localhost")
-	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       host,
-		PageSize:   2, // with a page size of 2: 2 assets will be returned for pages 1 and 2, and 1 will be returned on page 3
-		StatFn:     MockStatFn,
-	}
-
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", "1")
-
-	var assets []domain.AssetEvent
-	for {
-		select {
-		case respAsset, ok := <-assetChan:
-			if !ok {
-				assetChan = nil
-			} else {
-				assets = append(assets, respAsset)
-			}
-		case err, ok := <-errChan:
-			if !ok {
-				errChan = nil
-			} else {
-				t.Fatalf("Unexpected error occurred %v ", err)
-			}
-		}
-
-		if assetChan == nil && errChan == nil {
-			break
-		}
-	}
-	assert.Len(t, assets, 5)
-	assert.Contains(t, assets, expectedAsset1)
-	assert.Contains(t, assets, expectedAsset2)
-	assert.Contains(t, assets, expectedAsset3)
-	assert.Contains(t, assets, expectedAsset4)
-	assert.Contains(t, assets, expectedAsset5)
-}
-
-func TestFetchAssetsSuccessWithMultipleMakeRequestsCalledWithError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockRT := NewMockRoundTripper(ctrl)
-
-	asset1 := Asset{IP: "127.0.0.1", ID: 1, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset1, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
-	asset2 := Asset{IP: "127.0.0.2", ID: 2, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset2, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
-	asset3 := Asset{IP: "127.0.0.3", ID: 3, History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-	expectedAsset3, _ := asset1.AssetPayloadToAssetEvent(time.Date(2019, 05, 14, 15, 03, 47, 0, time.UTC))
-	page := Page{
-		TotalPages:     3,
-		TotalResources: 5,
-	}
-	page1Resp := SiteAssetsResponse{
-		Resources: []Asset{asset1, asset2},
-		Page:      page,
-	}
-	page3Resp := SiteAssetsResponse{
-		Resources: []Asset{asset3},
-		Page:      page,
-	}
-	respJSON1, _ := json.Marshal(page1Resp)
-	respJSON3, _ := json.Marshal(page3Resp)
-	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(respJSON1)),
-		StatusCode: http.StatusOK,
-	}, nil)
-	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
-		StatusCode: http.StatusOK,
-	}, nil)
-	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader(respJSON3)),
-		StatusCode: http.StatusOK,
-	}, nil)
-
-	host, _ := url.Parse("http://localhost")
-	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       host,
-		PageSize:   2,
-		StatFn:     MockStatFn,
-	}
-
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", "1")
-
-	var assets []domain.AssetEvent
-	var retErrors []error
-	for {
-		select {
-		case asset, ok := <-assetChan:
-			if !ok {
-				assetChan = nil
-			} else {
-				assets = append(assets, asset)
-			}
-		case err, ok := <-errChan:
-			if !ok {
-				errChan = nil
-			} else {
-				retErrors = append(retErrors, err)
-			}
-		}
-
-		if assetChan == nil && errChan == nil {
-			break
-		}
-	}
-	assert.Len(t, assets, 3)
-	assert.Contains(t, assets, expectedAsset1)
-	assert.Contains(t, assets, expectedAsset2)
-	assert.Contains(t, assets, expectedAsset3)
-	assert.Len(t, retErrors, 1)
-	assert.IsType(t, &ErrorParsingJSONResponse{}, retErrors[0])
-}
-
-func TestFetchAssetsBadJSONInResponseError(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockRT := NewMockRoundTripper(ctrl)
-
-	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
-		StatusCode: http.StatusOK,
-	}, nil)
-
-	host, _ := url.Parse("http://localhost")
-	nexposeAssetFetcher := &NexposeAssetFetcher{
-		HTTPClient: &http.Client{Transport: mockRT},
-		Host:       host,
-		StatFn:     MockStatFn,
-	}
-
-	_, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", "1")
-
-	assert.IsType(t, &ErrorParsingJSONResponse{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
-}
-
 func TestFetchAssetsFirstResponseError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -438,30 +252,9 @@ func TestFetchAssetsWithErrorReadingResponse(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", "1")
+	_, err := nexposeAssetFetcher.fetchNexposeSiteAssetsPage(context.Background(), 0, "site67")
 
-	var actualError error
-
-	for {
-		select {
-		case respAsset, ok := <-assetChan:
-			if !ok {
-				assetChan = nil
-			} else {
-				t.Fatalf("Unexpected error occurred %v ", respAsset)
-			}
-		case err, ok := <-errChan:
-			if !ok {
-				errChan = nil
-			} else {
-				actualError = err
-			}
-		}
-		if assetChan == nil && errChan == nil {
-			break
-		}
-	}
-	assert.IsType(t, &ErrorReadingNexposeResponse{}, actualError)
+	assert.IsType(t, &ErrorReadingNexposeResponse{}, err)
 }
 
 func TestFetchAssetsSuccessWithNoAssetReturned(t *testing.T) {
@@ -512,30 +305,9 @@ func TestFetchAssetsHTTPError(t *testing.T) {
 		StatFn:     MockStatFn,
 	}
 
-	assetChan, errChan := nexposeAssetFetcher.FetchAssets(context.Background(), "site67", "1")
+	_, err := nexposeAssetFetcher.fetchNexposeSiteAssetsPage(context.Background(), 0, "site67")
 
-	var actualError error
-
-	for {
-		select {
-		case respAsset, ok := <-assetChan:
-			if !ok {
-				assetChan = nil
-			} else {
-				t.Fatalf("Unexpected error occurred %v ", respAsset)
-			}
-		case err, ok := <-errChan:
-			if !ok {
-				errChan = nil
-			} else {
-				actualError = err
-			}
-		}
-		if assetChan == nil && errChan == nil {
-			break
-		}
-	}
-	assert.IsType(t, &NexposeHTTPRequestError{}, actualError)
+	assert.IsType(t, &NexposeHTTPRequestError{}, err)
 }
 
 func TestFetchAssetsAssetPayloadToAssetEventError(t *testing.T) {
@@ -591,288 +363,6 @@ func TestFetchAssetsAssetPayloadToAssetEventError(t *testing.T) {
 	assert.IsType(t, &MissingRequiredInformation{}, actualError)
 }
 
-// func TestMakeRequestSuccess(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-// 	mockRT := NewMockRoundTripper(ctrl)
-
-// 	asset := Asset{
-// 		IP:      "127.0.0.1",
-// 		ID:      1,
-// 		History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-05-14T15:03:47.000Z"}}}
-// 	resp := SiteAssetsResponse{
-// 		Resources: []Asset{asset},
-// 		Page:      Page{},
-// 	}
-
-// 	respJSON, _ := json.Marshal(resp)
-// 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-// 		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
-// 		StatusCode: http.StatusOK,
-// 	}, nil)
-
-// 	host, _ := url.Parse("http://localhost")
-// 	nexposeAssetFetcher := &NexposeAssetFetcher{
-// 		HTTPClient: &http.Client{Transport: mockRT},
-// 		Host:       host,
-// 		PageSize:   100,
-// 		StatFn:     MockStatFn,
-// 	}
-
-// 	var wg sync.WaitGroup
-// 	assetChan := make(chan domain.AssetEvent, 1)
-// 	errChan := make(chan error, 1)
-// 	defer close(assetChan)
-// 	defer close(errChan)
-
-// 	wg.Add(1)
-// 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", "1", 100, assetChan, errChan)
-// 	wg.Wait()
-// 	assert.NotNil(t, <-assetChan)
-// }
-
-// func TestMakeRequestStatUnscannedAssets(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-// 	mockRT := NewMockRoundTripper(ctrl)
-// 	mockStat := NewMockStat(ctrl)
-
-// 	assetScanned := Asset{
-// 		IP:      "127.0.0.1",
-// 		ID:      1,
-// 		History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "2019-06-14T15:03:47.000Z"}}}
-// 	assetUnscanned := Asset{
-// 		IP:      "127.0.0.2",
-// 		ID:      2,
-// 		History: assetHistoryEvents{AssetHistory{Type: "ASSET-IMPORT", Date: "2019-06-14T15:03:47.000Z"}}}
-// 	resp := SiteAssetsResponse{
-// 		Resources: []Asset{assetScanned, assetUnscanned},
-// 		Page:      Page{},
-// 	}
-
-// 	respJSON, _ := json.Marshal(resp)
-// 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-// 		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
-// 		StatusCode: http.StatusOK,
-// 	}, nil)
-
-// 	host, _ := url.Parse("http://localhost")
-// 	nexposeAssetFetcher := &NexposeAssetFetcher{
-// 		HTTPClient: &http.Client{Transport: mockRT},
-// 		Host:       host,
-// 		PageSize:   100,
-// 		StatFn:     func(ctx context.Context) domain.Stat { return mockStat },
-// 	}
-
-// 	var wg sync.WaitGroup
-// 	assetChan := make(chan domain.AssetEvent, 1)
-// 	errChan := make(chan error, 1)
-// 	defer close(assetChan)
-// 	defer close(errChan)
-
-// 	wg.Add(1)
-// 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", "1", 100, assetChan, errChan)
-// 	wg.Wait()
-// 	assert.Len(t, assetChan, 1)
-// 	assert.Len(t, errChan, 1)
-// }
-
-// func TestMakeRequestWithErrorReadingResponse(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-// 	mockRT := NewMockRoundTripper(ctrl)
-// 	rd := &errReader{Error: errors.New("ioutil.ReadAll error")}
-
-// 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-// 		Body:       ioutil.NopCloser(rd),
-// 		StatusCode: http.StatusOK,
-// 	}, nil)
-
-// 	host, _ := url.Parse("http://localhost")
-// 	nexposeAssetFetcher := &NexposeAssetFetcher{
-// 		HTTPClient: &http.Client{Transport: mockRT},
-// 		Host:       host,
-// 		PageSize:   100,
-// 		StatFn:     MockStatFn,
-// 	}
-
-// 	var wg sync.WaitGroup
-// 	assetChan := make(chan domain.AssetEvent, 1)
-// 	errChan := make(chan error, 1)
-
-// 	wg.Add(1)
-// 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", "1", 100, assetChan, errChan)
-// 	wg.Wait()
-
-// 	close(assetChan)
-// 	close(errChan)
-
-// 	assert.IsType(t, &ErrorReadingNexposeResponse{}, <-errChan)
-// }
-
-// func TestMakeRequestHTTPError(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-// 	mockRT := NewMockRoundTripper(ctrl)
-
-// 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(nil, errors.New("HTTPError"))
-
-// 	host, _ := url.Parse("http://localhost")
-// 	nexposeAssetFetcher := &NexposeAssetFetcher{
-// 		HTTPClient: &http.Client{Transport: mockRT},
-// 		Host:       host,
-// 		PageSize:   100,
-// 		StatFn:     MockStatFn,
-// 	}
-
-// 	var wg sync.WaitGroup
-// 	assetChan := make(chan domain.AssetEvent, 1)
-// 	errChan := make(chan error, 1)
-
-// 	wg.Add(1)
-// 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", "1", 100, assetChan, errChan)
-// 	wg.Wait()
-
-// 	close(assetChan)
-// 	close(errChan)
-
-// 	err := <-errChan
-// 	assert.IsType(t, &NexposeHTTPRequestError{}, err)
-// 	assert.Contains(t, err.Error(), "error making an HTTP request to Nexpose with URL http://localhost/api/3/sites/siteID/assets?page=100&size=100:")
-// }
-
-// func TestMakeRequestWithAssetPayloadToAssetEventError(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-// 	mockRT := NewMockRoundTripper(ctrl)
-// 	resp := SiteAssetsResponse{
-// 		Resources: []Asset{{History: assetHistoryEvents{AssetHistory{ScanID: 1, Type: "SCAN", Date: "1234-12-01T00:00:00Z"}}}},
-// 		Page:      Page{},
-// 	}
-// 	respJSON, _ := json.Marshal(resp)
-// 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-// 		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
-// 		StatusCode: http.StatusOK,
-// 	}, nil)
-
-// 	host, _ := url.Parse("http://localhost")
-// 	nexposeAssetFetcher := &NexposeAssetFetcher{
-// 		HTTPClient: &http.Client{Transport: mockRT},
-// 		Host:       host,
-// 		PageSize:   100,
-// 		StatFn:     MockStatFn,
-// 	}
-
-// 	var wg sync.WaitGroup
-// 	assetChan := make(chan domain.AssetEvent, 1)
-// 	errChan := make(chan error, 1)
-
-// 	wg.Add(1)
-// 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", "1", 100, assetChan, errChan)
-// 	wg.Wait()
-
-// 	close(assetChan)
-// 	close(errChan)
-
-// 	assert.IsType(t, &MissingRequiredInformation{}, <-errChan)
-// }
-
-// func TestMakeRequestWithNoAssetsReturned(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-// 	mockRT := NewMockRoundTripper(ctrl)
-// 	resp := SiteAssetsResponse{
-// 		Resources: []Asset{},
-// 		Page:      Page{},
-// 	}
-// 	respJSON, _ := json.Marshal(resp)
-// 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-// 		Body:       ioutil.NopCloser(bytes.NewReader(respJSON)),
-// 		StatusCode: http.StatusOK,
-// 	}, nil)
-
-// 	host, _ := url.Parse("http://localhost")
-// 	nexposeAssetFetcher := &NexposeAssetFetcher{
-// 		HTTPClient: &http.Client{Transport: mockRT},
-// 		Host:       host,
-// 		PageSize:   100,
-// 		StatFn:     MockStatFn,
-// 	}
-
-// 	var wg sync.WaitGroup
-// 	assetChan := make(chan domain.AssetEvent, 1)
-// 	errChan := make(chan error, 1)
-
-// 	wg.Add(1)
-// 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", "1", 100, assetChan, errChan)
-// 	wg.Wait()
-
-// 	close(assetChan)
-// 	close(errChan)
-
-// 	// An empty Asset will be returned on the channel because we're reading from a closed channel here - this is expected
-// 	assert.Equal(t, domain.AssetEvent{}, <-assetChan)
-// 	assert.Nil(t, <-errChan)
-// }
-
-// func TestMakeRequestWithNoResponse(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-// 	mockRT := NewMockRoundTripper(ctrl)
-
-// 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-// 		Body:       ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
-// 		StatusCode: http.StatusOK,
-// 	}, nil)
-
-// 	host, _ := url.Parse("http://localhost")
-// 	nexposeAssetFetcher := &NexposeAssetFetcher{
-// 		HTTPClient: &http.Client{Transport: mockRT},
-// 		Host:       host,
-// 		StatFn:     MockStatFn,
-// 	}
-
-// 	var wg sync.WaitGroup
-// 	assetChan := make(chan domain.AssetEvent, 1)
-// 	errChan := make(chan error, 1)
-// 	defer close(assetChan)
-// 	defer close(errChan)
-
-// 	wg.Add(1)
-// 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", "1", 100, assetChan, errChan)
-// 	wg.Wait()
-// 	assert.IsType(t, &ErrorParsingJSONResponse{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
-// }
-
-// func TestMakeRequestWithNotOKStatus(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-// 	mockRT := NewMockRoundTripper(ctrl)
-
-// 	mockRT.EXPECT().RoundTrip(gomock.Any()).Return(&http.Response{
-// 		Body:       ioutil.NopCloser(bytes.NewReader([]byte("fail"))),
-// 		StatusCode: http.StatusBadRequest,
-// 	}, nil)
-
-// 	host, _ := url.Parse("http://localhost")
-// 	nexposeAssetFetcher := &NexposeAssetFetcher{
-// 		HTTPClient: &http.Client{Transport: mockRT},
-// 		Host:       host,
-// 		StatFn:     MockStatFn,
-// 	}
-
-// 	var wg sync.WaitGroup
-// 	assetChan := make(chan domain.AssetEvent, 1)
-// 	errChan := make(chan error, 1)
-// 	defer close(assetChan)
-// 	defer close(errChan)
-
-// 	wg.Add(1)
-// 	nexposeAssetFetcher.makeRequest(context.Background(), &wg, "siteID", "1", 100, assetChan, errChan)
-// 	wg.Wait()
-// 	assert.IsType(t, &ErrorFetchingAssets{}, <-errChan) // Error will be returned from json.Unmarshal and added to errChan
-// }
-
 func TestNewNexposeSiteAssetsRequestSuccess(t *testing.T) {
 	host, _ := url.Parse("http://localhost")
 	assetFetcher := &NexposeAssetFetcher{
@@ -880,8 +370,8 @@ func TestNewNexposeSiteAssetsRequestSuccess(t *testing.T) {
 		PageSize: 100,
 		StatFn:   MockStatFn,
 	}
-	req := assetFetcher.newNexposeSiteAssetsRequest("siteID", 1)
-
+	req, err := assetFetcher.newNexposeSiteAssetsRequest("siteID", 1)
+	assert.Nil(t, err)
 	assert.Equal(t, "http://localhost/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
 }
 
@@ -892,8 +382,8 @@ func TestNewNexposeSiteAssetsRequestWithExtraSlashes(t *testing.T) {
 		PageSize: 100,
 		StatFn:   MockStatFn,
 	}
-	req := assetFetcher.newNexposeSiteAssetsRequest("/siteID/", 1)
-
+	req, err := assetFetcher.newNexposeSiteAssetsRequest("/siteID/", 1)
+	assert.Nil(t, err)
 	assert.Equal(t, "http://localhost/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
 }
 
