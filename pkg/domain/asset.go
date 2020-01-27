@@ -1,12 +1,6 @@
-package assetfetcher
+package domain
 
-import (
-	"errors"
-	"strconv"
-	"time"
-
-	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
-)
+import "time"
 
 // Asset represents a Nexpose asset response payload
 // See: https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getSiteAssets
@@ -24,7 +18,7 @@ type Asset struct {
 	// The files discovered with searching on the asset.
 	Files []File `json:"files,omitempty"`
 	// The history of changes to the asset over time.
-	History assetHistoryEvents `json:"history,omitempty"`
+	History AssetHistoryEvents `json:"history,omitempty"`
 	// The primary host name (local or FQDN) of the asset.
 	HostName string `json:"hostName,omitempty"`
 	// All host names or aliases discovered on the asset.
@@ -60,6 +54,9 @@ type Asset struct {
 	// Summary information for vulnerabilities on the asset.
 	VulnerabilitiesSummary *VulnerabilitySummary `json:"vulnerabilities,omitempty"`
 }
+
+// AssetHistoryEvents an array of AssetHistories used to determine most recent scan
+type AssetHistoryEvents []AssetHistory
 
 // Address represents the Address field of a Nexpose asset
 type Address struct {
@@ -311,38 +308,14 @@ type VulnerabilitySummary struct {
 	Total int64 `json:"total,omitempty"`
 }
 
-// AssetPayloadToAssetEvent translates a Nexpose Asset API response payload
-// into an AssetEvent for downstream services.
-func (a Asset) AssetPayloadToAssetEvent(scanTime time.Time) (domain.AssetEvent, error) {
-	if a.ID == 0 || (a.IP == "" && a.HostName == "") {
-		return domain.AssetEvent{}, &MissingRequiredInformation{a.ID, a.IP, a.HostName, scanTime}
-	}
-	return domain.AssetEvent{
-		ID:       a.ID,
-		Hostname: a.HostName,
-		IP:       a.IP,
-		ScanTime: scanTime,
-	}, nil
-}
-
-type assetHistoryEvents []AssetHistory
-
-// GetScanTime searches through the asset's event history for a scan event with the ScanID
-// that matches the ScanID of the scan completion event that triggered the pipeline.
-func (a Asset) GetScanTime(scanID string) (time.Time, error) {
-	for _, evt := range a.History {
-		if evt.Type == "SCAN" {
-			if strconv.FormatInt(evt.ScanID, 10) == scanID {
-				scanTime, err := time.Parse(time.RFC3339, evt.Date)
-				if err != nil {
-					return time.Time{}, &InvalidScanTime{scanID, scanTime, a.ID, a.IP, a.HostName, err}
-				}
-				if scanTime.IsZero() {
-					return time.Time{}, &InvalidScanTime{scanID, scanTime, a.ID, a.IP, a.HostName, errors.New("scan time is zero")}
-				}
-				return scanTime, nil
-			}
-		}
-	}
-	return time.Time{}, &ScanIDForLastScanNotInAssetHistory{scanID, a.ID, a.IP, a.HostName}
+// AssetEvent contains all pertinent Nexpose Asset information for downstream services
+type AssetEvent struct {
+	// The time the asset was scanned.
+	ScanTime time.Time
+	// The primary host name (local or FQDN) of the asset.
+	Hostname string
+	// The identifier of the asset.
+	ID int64
+	// The primary IPv4 or IPv6 address of the asset.
+	IP string
 }

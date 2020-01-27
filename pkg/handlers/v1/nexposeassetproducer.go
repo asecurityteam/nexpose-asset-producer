@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"sync"
-
-	"github.com/asecurityteam/nexpose-asset-producer/pkg/assetfetcher"
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/logs"
 )
@@ -21,10 +18,11 @@ type ScanInfo struct {
 
 // NexposeScannedAssetProducer is a lambda handler that fetches Nexpose Assets and sends them to an event stream
 type NexposeScannedAssetProducer struct {
-	Producer     domain.Producer
-	AssetFetcher domain.AssetFetcher
-	LogFn        domain.LogFn
-	StatFn       domain.StatFn
+	Producer       domain.Producer
+	AssetFetcher   domain.AssetFetcher
+	AssetValidator domain.AssetValidator
+	LogFn          domain.LogFn
+	StatFn         domain.StatFn
 }
 
 // Handle is an AWS Lambda handler that takes in a SiteID for a Nexpose scan that has completed,
@@ -32,66 +30,45 @@ type NexposeScannedAssetProducer struct {
 func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) error {
 	logger := h.LogFn(ctx)
 	stater := h.StatFn(ctx)
-
-	assetChan, errChan := h.AssetFetcher.FetchAssets(ctx, in.SiteID, in.ScanID)
-
+	// stater := c.StatFn(ctx)
+	// stater.Count("totalassets", float64(numTotalAssets), fmt.Sprintf("site:%s", siteID))
+	totalAssets, err := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
+	if err != nil {
+		logger.Error(logs.AssetFetchFail{
+			Reason: err.Error(),
+		})
+		return err
+	}
 	var totalAssetsProduced float64
 
-	wg := sync.WaitGroup{}
-	var mutex = &sync.Mutex{}
-	for {
-		select {
-		case asset, ok := <-assetChan:
-			if !ok {
-				assetChan = nil
-			} else {
-				wg.Add(1)
-				go func(ctx context.Context, asset domain.AssetEvent) {
-					defer wg.Done()
-					err := h.Producer.Produce(ctx, asset)
-					if err != nil {
-						stater.Count("producerfailure", 1, fmt.Sprintf("site:%s", in.SiteID))
-						logger.Error(logs.ProducerFailure{
-							Reason: err.Error(),
-						})
-					} else {
-						mutex.Lock()
-						totalAssetsProduced++
-						mutex.Unlock()
-					}
-				}(ctx, asset)
-			}
-		case err, ok := <-errChan:
-			if !ok {
-				errChan = nil
-			} else {
-				switch err.(type) {
-				// in the event of an ErrorFetchingAssets case, we are guaranteed that we have not produced ANY assets.
-				// this is based on retrieving all assets prior to producing, fanout with no partial failure
-				case *assetfetcher.ErrorFetchingAssets:
-					logger.Error(logs.AssetFetchFail{
-						Reason: err.Error(),
-					})
-					return err
-				case *assetfetcher.ScanIDForLastScanNotInAssetHistory:
-					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "noscantimeforscanid"))
-				case *assetfetcher.InvalidScanTime:
-					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "invalidscantime"))
-				case *assetfetcher.MissingRequiredInformation:
-					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "missingfields"))
-				default:
-					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "unknown"))
-				}
-				logger.Error(logs.AssetFetchFail{
-					Reason: err.Error(),
-				})
-			}
+	validAssets, invalidAssets := h.AssetValidator.ValidateAssets(ctx, totalAssets, in.ScanID)
+	for _, validAsset := range validAssets {
+		err := h.Producer.Produce(ctx, validAsset)
+		if err != nil {
+			stater.Count("producerfailure", 1, fmt.Sprintf("site:%s", in.SiteID))
+			logger.Error(logs.ProducerFailure{
+				Reason: err.Error(),
+			})
+			continue
 		}
-		if assetChan == nil && errChan == nil {
-			break
-		}
+		totalAssetsProduced++
+
 	}
-	wg.Wait()
 	stater.Count("totalassetsproduced", totalAssetsProduced, fmt.Sprintf("site:%s", in.SiteID))
+	for _, invalidAsset := range invalidAssets {
+		switch invalidAsset.(type) {
+		case *domain.ScanIDForLastScanNotInAssetHistory:
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "noscantimeforscanid"))
+		case *domain.InvalidScanTime:
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "invalidscantime"))
+		case *domain.MissingRequiredInformation:
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "missingfields"))
+		default:
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "unknown"))
+		}
+		logger.Error(logs.AssetFetchFail{
+			Reason: invalidAsset.Error(),
+		})
+	}
 	return nil
 }

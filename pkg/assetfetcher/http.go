@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"sync"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
@@ -28,7 +27,7 @@ type SiteAssetsResponse struct {
 	// The details of pagination indicating which page was returned, and how the remaining pages can be retrieved.
 	Page Page
 	// The page of resources returned (resources = assets)
-	Resources []Asset
+	Resources []domain.Asset
 }
 
 // Page represents the JSON object Nexpose provides to help paginate through all the Assets
@@ -55,58 +54,8 @@ type NexposeAssetFetcher struct {
 	StatFn domain.StatFn
 }
 
-// FetchAssets gets all the assets for a given site ID from Nexpose by calling `/api/3/sites/{id}/assets`, specifically from
-// fetchAllNexposeSiteAssets. Afterwards, this function will loop through all the assets returned from fetchAllNexposeSiteAssets.
-// This function achieves fan-out with no partial failure for retrieving assets
-func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string, scanID string) (<-chan domain.AssetEvent, <-chan error) {
-	errChan := make(chan error, 1)
-	defer close(errChan)
-
-	allAssetsInSite, err := c.fetchAllNexposeSiteAssets(ctx, siteID)
-	if err != nil {
-		errChan <- err
-		return nil, errChan
-	}
-
-	numTotalAssets := len(allAssetsInSite)
-	stater := c.StatFn(ctx)
-	stater.Count("totalassets", float64(numTotalAssets), fmt.Sprintf("site:%s", siteID))
-	pagedAssetChan := make(chan domain.AssetEvent, numTotalAssets)
-	pagedErrChan := make(chan error, numTotalAssets)
-	var wg sync.WaitGroup
-
-	for _, asset := range allAssetsInSite {
-		wg.Add(1)
-		go func(singleAsset Asset) {
-			defer wg.Done()
-			scanTime, err := singleAsset.GetScanTime(scanID)
-			if err != nil {
-				pagedErrChan <- err
-				return
-			}
-			assetEvent, err := singleAsset.AssetPayloadToAssetEvent(scanTime)
-			if err != nil {
-				pagedErrChan <- err
-				return
-			}
-			pagedAssetChan <- assetEvent
-		}(asset)
-
-	}
-
-	go func() {
-		defer close(pagedErrChan)
-		defer close(pagedAssetChan)
-		wg.Wait()
-	}()
-
-	return pagedAssetChan, pagedErrChan
-}
-
-// fetchAllNexposeSiteAssets returns all assets from a given Nexpose site. This function first makes a call
-// to retrieve the first page of assets in a Nexpose site, then concurrently retrieves all pages after knowing the total pages.
-// The function uses a fanout pattern with no partial error
-func (c *NexposeAssetFetcher) fetchAllNexposeSiteAssets(ctx context.Context, siteID string) ([]Asset, error) {
+// FetchAssets gets all the assets for a given site ID from Nexpose by calling `/api/3/sites/{id}/assets`
+func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) ([]domain.Asset, error) {
 	// have to page through to get all the assets, start with page 0
 	// make the first call to Nexpose to get the total number of pages we'll
 	var currentPage = 0
@@ -114,7 +63,7 @@ func (c *NexposeAssetFetcher) fetchAllNexposeSiteAssets(ctx context.Context, sit
 	firstPageOfAssets, initialErr := c.fetchNexposeSiteAssetsPage(ctx, currentPage, siteID)
 	if initialErr != nil {
 		defer cancel()
-		return []Asset{}, &ErrorFetchingAssets{Inner: initialErr, Page: 0, SiteID: siteID}
+		return []domain.Asset{}, &domain.ErrorFetchingAssets{Inner: initialErr, Page: 0, SiteID: siteID}
 	}
 
 	totalPages := firstPageOfAssets.Page.TotalPages
@@ -127,7 +76,7 @@ func (c *NexposeAssetFetcher) fetchAllNexposeSiteAssets(ctx context.Context, sit
 			pageOfAssets, err := c.fetchNexposeSiteAssetsPage(ctx, page, site)
 			if err != nil {
 				defer cancel()
-				pageErrChan <- &ErrorFetchingAssets{Inner: err, Page: page, SiteID: siteID}
+				pageErrChan <- &domain.ErrorFetchingAssets{Inner: err, Page: page, SiteID: siteID}
 				return
 			}
 			pageAssetChan <- pageOfAssets
@@ -140,7 +89,7 @@ func (c *NexposeAssetFetcher) fetchAllNexposeSiteAssets(ctx context.Context, sit
 		case pageOfAssets := <-pageAssetChan:
 			totalAssets = append(totalAssets, pageOfAssets.Resources...)
 		case err := <-pageErrChan:
-			return []Asset{}, err
+			return []domain.Asset{}, err
 		}
 	}
 
@@ -156,21 +105,21 @@ func (c *NexposeAssetFetcher) fetchNexposeSiteAssetsPage(ctx context.Context, pa
 
 	res, err := c.HTTPClient.Do(req.WithContext(ctx))
 	if err != nil {
-		return SiteAssetsResponse{}, &NexposeHTTPRequestError{NexposeURL: req.URL.String(), Inner: err}
+		return SiteAssetsResponse{}, &domain.NexposeHTTPRequestError{NexposeURL: req.URL.String(), Inner: err}
 	}
 	defer res.Body.Close()
 	respBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return SiteAssetsResponse{}, &ErrorReadingNexposeResponse{NexposeURL: req.URL.String(), Inner: err}
+		return SiteAssetsResponse{}, &domain.ErrorReadingNexposeResponse{NexposeURL: req.URL.String(), Inner: err}
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return SiteAssetsResponse{}, &NexposeHTTPRequestError{NexposeURL: req.URL.String(), Inner: fmt.Errorf("bad response code: %v", res.StatusCode)}
+		return SiteAssetsResponse{}, &domain.NexposeHTTPRequestError{NexposeURL: req.URL.String(), Inner: fmt.Errorf("bad response code: %v", res.StatusCode)}
 	}
 
 	var siteAssetResp SiteAssetsResponse
 	if err := json.Unmarshal(respBody, &siteAssetResp); err != nil {
-		return SiteAssetsResponse{}, &ErrorParsingJSONResponse{NexposeURL: req.URL.String(), Inner: err}
+		return SiteAssetsResponse{}, &domain.ErrorParsingJSONResponse{NexposeURL: req.URL.String(), Inner: err}
 	}
 
 	return siteAssetResp, nil
@@ -188,7 +137,7 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 	// which we already checked for earlier, so no need to check it again
 	req, err := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
-		return nil, &URLParsingError{Inner: err, NexposeURL: u.String()}
+		return nil, &domain.URLParsingError{Inner: err, NexposeURL: u.String()}
 	}
 	return req, nil
 }

@@ -1,4 +1,4 @@
-package assetfetcher
+package domain
 
 import (
 	"fmt"

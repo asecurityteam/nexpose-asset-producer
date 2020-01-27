@@ -1,4 +1,4 @@
-package assetfetcher
+package domain
 
 import (
 	"fmt"
@@ -61,6 +61,21 @@ func (e *ErrorFetchingAssets) Error() string {
 	return fmt.Sprintf("error fetching assets site: %v, on page %d, from Nexpose. %v", e.SiteID, e.Page, e.Inner)
 }
 
+// ScanIDForLastScanNotInAssetHistory represents an error that occurs when an asset's history doesn't contain
+// the ScanID for the notification for a completed scan. This means that the asset is in the site that was scanned,
+// but the asset itself was not scanned.
+type ScanIDForLastScanNotInAssetHistory struct {
+	ScanID        string
+	AssetID       int64
+	AssetIP       string
+	AssetHostname string
+}
+
+// Error returns an ScanIdForLastScanNotInAssetHistory
+func (e *ScanIDForLastScanNotInAssetHistory) Error() string {
+	return fmt.Sprintf("Asset was not scanned during the scan with ScanID: %v, AssetID: %v, IP: %s, Hostname: %s", e.ScanID, e.AssetID, e.AssetIP, e.AssetHostname)
+}
+
 // MissingRequiredInformation represents an error we get if the ID, or IP and Hostname
 type MissingRequiredInformation struct {
 	AssetID       int64
@@ -87,19 +102,4 @@ type InvalidScanTime struct {
 // Error returns an InvalidScanTime
 func (e *InvalidScanTime) Error() string {
 	return fmt.Sprintf("Invalid scan time. ScanID: %v, ScanTime: %v, AssetID: %v, IP: %s, Hostname: %s, Error: %s", e.ScanID, e.ScanTime, e.AssetID, e.AssetIP, e.AssetHostname, e.Inner.Error())
-}
-
-// ScanIDForLastScanNotInAssetHistory represents an error that occurs when an asset's history doesn't contain
-// the ScanID for the notification for a completed scan. This means that the asset is in the site that was scanned,
-// but the asset itself was not scanned.
-type ScanIDForLastScanNotInAssetHistory struct {
-	ScanID        string
-	AssetID       int64
-	AssetIP       string
-	AssetHostname string
-}
-
-// Error returns an ScanIdForLastScanNotInAssetHistory
-func (e *ScanIDForLastScanNotInAssetHistory) Error() string {
-	return fmt.Sprintf("Asset was not scanned during the scan with ScanID: %v, AssetID: %v, IP: %s, Hostname: %s", e.ScanID, e.AssetID, e.AssetIP, e.AssetHostname)
 }
