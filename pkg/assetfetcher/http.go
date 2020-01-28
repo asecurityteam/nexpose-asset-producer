@@ -60,9 +60,10 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) ([
 	// make the first call to Nexpose to get the total number of pages we'll
 	var currentPage = 0
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	firstPageOfAssets, initialErr := c.fetchNexposeSiteAssetsPage(ctx, currentPage, siteID)
 	if initialErr != nil {
-		defer cancel()
 		return []domain.Asset{}, &domain.ErrorFetchingAssets{Inner: initialErr, Page: 0, SiteID: siteID}
 	}
 
@@ -75,14 +76,12 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) ([
 		go func(ctx context.Context, page int, site string) {
 			pageOfAssets, err := c.fetchNexposeSiteAssetsPage(ctx, page, site)
 			if err != nil {
-				defer cancel()
 				pageErrChan <- &domain.ErrorFetchingAssets{Inner: err, Page: page, SiteID: siteID}
 				return
 			}
 			pageAssetChan <- pageOfAssets
 		}(ctx, currentPage, siteID)
 	}
-	defer cancel()
 
 	for currentPage := 1; currentPage < totalPages; currentPage++ {
 		select {
