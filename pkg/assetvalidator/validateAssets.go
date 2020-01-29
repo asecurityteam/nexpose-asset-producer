@@ -34,7 +34,7 @@ func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []dom
 	return assetEventListList, errorList
 }
 
-// GetScanTime searches through the asset's event history for a scan event with the ScanID
+// getScanTime searches through the asset's event history for a scan event with the ScanID
 // that matches the ScanID of the scan completion event that triggered the pipeline.
 func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string) (time.Time, error) {
 	for _, evt := range asset.History {
@@ -54,7 +54,7 @@ func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string) (
 	return time.Time{}, &domain.ScanIDForLastScanNotInAssetHistory{ScanID: scanID, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
 }
 
-// AssetPayloadToAssetEvent translates a Nexpose Asset API response payload
+// assetPayloadToAssetEvent translates a Nexpose Asset API response payload
 // into an AssetEvent for downstream services.
 func (v *NexposeAssetValidator) assetPayloadToAssetEvent(asset domain.Asset, scanTime time.Time) (domain.AssetEvent, error) {
 	if asset.ID == 0 || (asset.IP == "" && asset.HostName == "") {
