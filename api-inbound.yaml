@@ -102,10 +102,14 @@ paths:
             {
               "status":
                 #! if eq .Response.Body.errorType "ErrorFetchingAssets" !# 502,
+                #! else !# 500,
                 #! end !#
               "body": {
                 #! if eq .Response.Body.errorType "ErrorFetchingAssets" !#
                 "code": 502, "status": "Bad Gateway",
+                #! else !#
+                "code": 500, "status": "Internal Server Error",
+                #! end !#
               }
             }
 
