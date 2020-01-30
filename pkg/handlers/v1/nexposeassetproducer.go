@@ -32,13 +32,18 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) e
 	stater := h.StatFn(ctx)
 	// stater := c.StatFn(ctx)
 	// stater.Count("totalassets", float64(numTotalAssets), fmt.Sprintf("site:%s", siteID))
-	totalAssets, err := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
-	if err != nil {
-		logger.Error(logs.AssetFetchFail{
-			Reason: err.Error(),
-		})
-		return err
+	totalAssets, fetchError := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
+	if fetchError != nil {
+		switch fetchError.(type) {
+		case *domain.ErrorFetchingAssets:
+			fetchError := fetchError.(*domain.ErrorFetchingAssets)
+			logger.Error(logs.AssetFetchFail{Message: fetchError.Error(), Reason: fetchError.Inner.Error(), Page: fetchError.Page, SiteID: in.SiteID})
+		default:
+			logger.Error(logs.AssetFetchFail{Reason: fetchError.Error(), SiteID: in.SiteID})
+		}
+		return fetchError
 	}
+
 	var totalAssetsProduced float64
 
 	validAssets, invalidAssets := h.AssetValidator.ValidateAssets(ctx, totalAssets, in.ScanID)
@@ -47,7 +52,9 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) e
 		if err != nil {
 			stater.Count("producerfailure", 1, fmt.Sprintf("site:%s", in.SiteID))
 			logger.Error(logs.ProducerFailure{
-				Reason: err.Error(),
+				Reason:  err.Error(),
+				SiteID:  in.SiteID,
+				AssetID: validAsset.ID,
 			})
 			continue
 		}
@@ -66,7 +73,7 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) e
 		default:
 			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "unknown"))
 		}
-		logger.Error(logs.AssetFetchFail{
+		logger.Error(logs.AssetValidateFail{
 			Reason: invalidAsset.Error(),
 		})
 	}

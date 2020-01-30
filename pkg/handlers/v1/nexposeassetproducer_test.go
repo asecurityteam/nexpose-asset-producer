@@ -145,7 +145,7 @@ func TestNexposeAssetProducerHandlerFetchFailure(t *testing.T) {
 	}
 	assetList := []domain.Asset{asset}
 
-	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetList, errors.New("i am error"))
+	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetList, &domain.ErrorFetchingAssets{Inner: errors.New("i am error")})
 	mockLogger.EXPECT().Error(gomock.Any())
 
 	handler := NexposeScannedAssetProducer{

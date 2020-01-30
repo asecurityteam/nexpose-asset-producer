@@ -52,13 +52,13 @@ func (e *NexposeHTTPRequestError) Error() string {
 // ErrorFetchingAssets represents an error we get when trying to fetch assets
 type ErrorFetchingAssets struct {
 	Inner  error
-	Page   int
+	Page   int64
 	SiteID string
 }
 
 // Error returns an ErrorFetchingAssets
 func (e *ErrorFetchingAssets) Error() string {
-	return fmt.Sprintf("error fetching assets site: %v, on page %d, from Nexpose. %v", e.SiteID, e.Page, e.Inner)
+	return "error fetching a particular page of assets from Nexpose"
 }
 
 // ScanIDForLastScanNotInAssetHistory represents an error that occurs when an asset's history doesn't contain

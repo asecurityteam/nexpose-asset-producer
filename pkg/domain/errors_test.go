@@ -43,8 +43,8 @@ func TestAssetFetcherErrors(t *testing.T) {
 		},
 		{
 			"ErrorFetchingAssets",
-			&ErrorFetchingAssets{Inner: customError},
-			fmt.Sprintf("error fetching assets site: , on page 0, from Nexpose. %v", customError),
+			&ErrorFetchingAssets{},
+			"error fetching a particular page of assets from Nexpose",
 		},
 		{
 			"MissingRequiredInformation",
