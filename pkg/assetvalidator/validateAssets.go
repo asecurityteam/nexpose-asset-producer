@@ -58,7 +58,7 @@ func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string) (
 // into an AssetEvent for downstream services.
 func (v *NexposeAssetValidator) assetPayloadToAssetEvent(asset domain.Asset, scanTime time.Time) (domain.AssetEvent, error) {
 	if asset.ID == 0 || (asset.IP == "" && asset.HostName == "") {
-		return domain.AssetEvent{}, &domain.MissingRequiredInformation{AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, AssetScanTime: scanTime}
+		return domain.AssetEvent{}, &domain.MissingRequiredInformation{AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
 	}
 	return domain.AssetEvent{
 		ID:       asset.ID,

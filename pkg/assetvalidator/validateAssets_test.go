@@ -121,13 +121,11 @@ func TestAssetValidation(t *testing.T) {
 					AssetID:       0,
 					AssetIP:       "",
 					AssetHostname: "",
-					AssetScanTime: time.Date(2019, time.April, 22, 15, 2, 44, 0, time.UTC),
 				},
 				&domain.MissingRequiredInformation{
 					AssetID:       2,
 					AssetIP:       "",
 					AssetHostname: "",
-					AssetScanTime: time.Date(2019, time.April, 22, 15, 2, 44, 0, time.UTC),
 				},
 			},
 		},

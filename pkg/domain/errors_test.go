@@ -48,18 +48,18 @@ func TestAssetFetcherErrors(t *testing.T) {
 		},
 		{
 			"MissingRequiredInformation",
-			&MissingRequiredInformation{123456, "ip", "host", scanTime},
-			fmt.Sprintf("required fields are missing. ID: 123456, IP: ip, Hostname: host, ScanTime: %v", scanTime),
+			&MissingRequiredInformation{123456, "ip", "host"},
+			"required fields are missing",
 		},
 		{
 			"InvalidScanTime",
 			&InvalidScanTime{"1", scanTime, 123456, "ip", "host", errors.New("myError")},
-			fmt.Sprintf("Invalid scan time. ScanID: 1, ScanTime: %v, AssetID: 123456, IP: ip, Hostname: host, Error: myError", scanTime),
+			fmt.Sprintf("Invalid scan time: %v", scanTime),
 		},
 		{
 			"ScanIDForLastScanNotInAssetHistory",
 			&ScanIDForLastScanNotInAssetHistory{"1", 123456, "ip", "host"},
-			fmt.Sprintf("Asset was not scanned during the scan with ScanID: 1, AssetID: 123456, IP: ip, Hostname: host"),
+			"Asset was not scanned during the scan",
 		},
 	}
 
