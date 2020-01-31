@@ -30,8 +30,6 @@ type NexposeScannedAssetProducer struct {
 func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) error {
 	logger := h.LogFn(ctx)
 	stater := h.StatFn(ctx)
-	// stater := c.StatFn(ctx)
-	// stater.Count("totalassets", float64(numTotalAssets), fmt.Sprintf("site:%s", siteID))
 	totalAssets, fetchError := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
 	if fetchError != nil {
 		switch fetchError.(type) {
@@ -43,6 +41,7 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) e
 		}
 		return fetchError
 	}
+	stater.Count("totalassets", float64(len(totalAssets)), fmt.Sprintf("site:%s", in.SiteID))
 
 	var totalAssetsProduced float64
 
@@ -62,20 +61,47 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) e
 
 	}
 	stater.Count("totalassetsproduced", totalAssetsProduced, fmt.Sprintf("site:%s", in.SiteID))
-	for _, invalidAsset := range invalidAssets {
-		switch invalidAsset.(type) {
+	for _, validationErr := range invalidAssets {
+		var warningLog interface{}
+		switch validationErr.(type) {
 		case *domain.ScanIDForLastScanNotInAssetHistory:
+			validationErr := validationErr.(*domain.ScanIDForLastScanNotInAssetHistory)
+			warningLog = logs.AssetValidateFail{
+				Reason:        validationErr.Error(),
+				AssetID:       validationErr.AssetID,
+				AssetIP:       validationErr.AssetIP,
+				AssetHostname: validationErr.AssetHostname,
+				SiteID:        in.SiteID,
+			}
 			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "noscantimeforscanid"))
 		case *domain.InvalidScanTime:
+			validationErr := validationErr.(*domain.InvalidScanTime)
+			warningLog = logs.AssetValidateFail{
+				Reason:        validationErr.Error(),
+				AssetID:       validationErr.AssetID,
+				AssetIP:       validationErr.AssetIP,
+				AssetHostname: validationErr.AssetHostname,
+				SiteID:        in.SiteID,
+			}
 			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "invalidscantime"))
 		case *domain.MissingRequiredInformation:
+			validationErr := validationErr.(*domain.MissingRequiredInformation)
+			warningLog = logs.AssetValidateFail{
+				Reason:        validationErr.Error(),
+				AssetID:       validationErr.AssetID,
+				AssetIP:       validationErr.AssetIP,
+				AssetHostname: validationErr.AssetHostname,
+				SiteID:        in.SiteID,
+			}
 			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "missingfields"))
 		default:
+			warningLog = logs.AssetValidateFail{
+				Reason: validationErr.Error(),
+				SiteID: in.SiteID,
+			}
 			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "unknown"))
 		}
-		logger.Error(logs.AssetValidateFail{
-			Reason: invalidAsset.Error(),
-		})
+		logger.Warn(warningLog)
 	}
 	return nil
 }

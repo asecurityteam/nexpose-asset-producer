@@ -76,7 +76,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) ([
 		go func(ctx context.Context, page int, site string) {
 			pageOfAssets, err := c.fetchNexposeSiteAssetsPage(ctx, page, site)
 			if err != nil {
-				pageErrChan <- &domain.ErrorFetchingAssets{Inner: err, Page: page, SiteID: siteID}
+				pageErrChan <- &domain.ErrorFetchingAssets{Inner: err, Page: int64(page), SiteID: siteID}
 				return
 			}
 			pageAssetChan <- pageOfAssets
