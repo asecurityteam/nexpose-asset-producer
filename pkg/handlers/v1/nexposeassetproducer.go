@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"sync"
-
-	"github.com/asecurityteam/nexpose-asset-producer/pkg/assetfetcher"
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/logs"
 )
@@ -21,69 +18,90 @@ type ScanInfo struct {
 
 // NexposeScannedAssetProducer is a lambda handler that fetches Nexpose Assets and sends them to an event stream
 type NexposeScannedAssetProducer struct {
-	Producer     domain.Producer
-	AssetFetcher domain.AssetFetcher
-	LogFn        domain.LogFn
-	StatFn       domain.StatFn
+	Producer       domain.Producer
+	AssetFetcher   domain.AssetFetcher
+	AssetValidator domain.AssetValidator
+	LogFn          domain.LogFn
+	StatFn         domain.StatFn
 }
 
 // Handle is an AWS Lambda handler that takes in a SiteID for a Nexpose scan that has completed,
 // get all the assets in the site that was scanned and produces each asset to a stream
-func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) {
+func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) error {
 	logger := h.LogFn(ctx)
 	stater := h.StatFn(ctx)
-
-	assetChan, errChan := h.AssetFetcher.FetchAssets(ctx, in.SiteID, in.ScanID)
+	totalAssets, fetchError := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
+	if fetchError != nil {
+		switch fetchError.(type) {
+		case *domain.ErrorFetchingAssets:
+			fetchError := fetchError.(*domain.ErrorFetchingAssets)
+			logger.Error(logs.AssetFetchFail{Message: fetchError.Error(), Reason: fetchError.Inner.Error(), Page: fetchError.Page, SiteID: in.SiteID})
+		default:
+			logger.Error(logs.AssetFetchFail{Reason: fetchError.Error(), SiteID: in.SiteID})
+		}
+		return fetchError
+	}
+	stater.Count("totalassets", float64(len(totalAssets)), fmt.Sprintf("site:%s", in.SiteID))
 
 	var totalAssetsProduced float64
 
-	wg := sync.WaitGroup{}
-	var mutex = &sync.Mutex{}
-	for {
-		select {
-		case asset, ok := <-assetChan:
-			if !ok {
-				assetChan = nil
-			} else {
-				wg.Add(1)
-				go func(ctx context.Context, asset domain.AssetEvent) {
-					defer wg.Done()
-					err := h.Producer.Produce(ctx, asset)
-					if err != nil {
-						stater.Count("producerfailure", 1, fmt.Sprintf("site:%s", in.SiteID))
-						logger.Error(logs.ProducerFailure{
-							Reason: err.Error(),
-						})
-					} else {
-						mutex.Lock()
-						totalAssetsProduced++
-						mutex.Unlock()
-					}
-				}(ctx, asset)
-			}
-		case err, ok := <-errChan:
-			if !ok {
-				errChan = nil
-			} else {
-				switch err.(type) {
-				case *assetfetcher.ScanIDForLastScanNotInAssetHistory:
-					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "noscantimeforscanid"))
-				case *assetfetcher.InvalidScanTime:
-					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "invalidscantime"))
-				case *assetfetcher.MissingRequiredInformation:
-					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "missingfields"))
-				default:
-					stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "unknown"))
-				}
-				logger.Error(logs.AssetFetchFail{
-					Reason: err.Error(),
-				})
-			}
+	validAssets, invalidAssets := h.AssetValidator.ValidateAssets(ctx, totalAssets, in.ScanID)
+	for _, validAsset := range validAssets {
+		err := h.Producer.Produce(ctx, validAsset)
+		if err != nil {
+			stater.Count("producerfailure", 1, fmt.Sprintf("site:%s", in.SiteID))
+			logger.Error(logs.ProducerFailure{
+				Reason:  err.Error(),
+				SiteID:  in.SiteID,
+				AssetID: validAsset.ID,
+			})
+			continue
 		}
-		if assetChan == nil && errChan == nil {
-			break
-		}
+		totalAssetsProduced++
+
 	}
-	wg.Wait()
 	stater.Count("totalassetsproduced", totalAssetsProduced, fmt.Sprintf("site:%s", in.SiteID))
+	for _, validationErr := range invalidAssets {
+		var warningLog interface{}
+		switch validationErr.(type) {
+		case *domain.ScanIDForLastScanNotInAssetHistory:
+			validationErr := validationErr.(*domain.ScanIDForLastScanNotInAssetHistory)
+			warningLog = logs.AssetValidateFail{
+				Reason:        validationErr.Error(),
+				AssetID:       validationErr.AssetID,
+				AssetIP:       validationErr.AssetIP,
+				AssetHostname: validationErr.AssetHostname,
+				SiteID:        in.SiteID,
+			}
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "noscantimeforscanid"))
+		case *domain.InvalidScanTime:
+			validationErr := validationErr.(*domain.InvalidScanTime)
+			warningLog = logs.AssetValidateFail{
+				Reason:        validationErr.Error(),
+				AssetID:       validationErr.AssetID,
+				AssetIP:       validationErr.AssetIP,
+				AssetHostname: validationErr.AssetHostname,
+				SiteID:        in.SiteID,
+			}
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "invalidscantime"))
+		case *domain.MissingRequiredInformation:
+			validationErr := validationErr.(*domain.MissingRequiredInformation)
+			warningLog = logs.AssetValidateFail{
+				Reason:        validationErr.Error(),
+				AssetID:       validationErr.AssetID,
+				AssetIP:       validationErr.AssetIP,
+				AssetHostname: validationErr.AssetHostname,
+				SiteID:        in.SiteID,
+			}
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "missingfields"))
+		default:
+			warningLog = logs.AssetValidateFail{
+				Reason: validationErr.Error(),
+				SiteID: in.SiteID,
+			}
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "unknown"))
+		}
+		logger.Warn(warningLog)
+	}
+	return nil
 }

@@ -4,4 +4,6 @@ package logs
 type ProducerFailure struct {
 	Message string `logevent:"message,default=producer-failure"`
 	Reason  string `logevent:"reason"`
+	SiteID  string `logevent:"siteid,default=unknown"`
+	AssetID int64  `logevent:"assetid"`
 }
