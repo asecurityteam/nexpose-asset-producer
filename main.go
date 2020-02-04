@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/assetfetcher"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/assetvalidator"
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 	nexposeassetproducer "github.com/asecurityteam/nexpose-asset-producer/pkg/handlers/v1"
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/producer"
@@ -32,13 +33,21 @@ func main() {
 	if err = settings.NewComponent(context.Background(), source, producerComponent, assetProducer); err != nil {
 		panic(err.Error())
 	}
+
+	assetValidatorComponent := &assetvalidator.AssetValidatorComponent{}
+	assetValidator := new(assetvalidator.NexposeAssetValidator)
+	if err = settings.NewComponent(context.Background(), source, assetValidatorComponent, assetValidator); err != nil {
+		panic(err.Error())
+	}
+
 	assetProducer.HTTPClient = http.DefaultClient
 
 	notifier := &nexposeassetproducer.NexposeScannedAssetProducer{
-		Producer:     assetProducer,
-		AssetFetcher: assetFetcher,
-		LogFn:        domain.LoggerFromContext,
-		StatFn:       domain.StatFromContext,
+		Producer:       assetProducer,
+		AssetFetcher:   assetFetcher,
+		AssetValidator: assetValidator,
+		LogFn:          domain.LoggerFromContext,
+		StatFn:         domain.StatFromContext,
 	}
 
 	dependencyCheckHandler := &nexposeassetproducer.DependencyCheckHandler{DependencyCheck: assetFetcher}
