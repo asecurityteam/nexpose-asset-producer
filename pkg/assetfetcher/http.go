@@ -204,7 +204,7 @@ func (c *NexposeAssetFetcher) newNexposeAssetsSearchRequest(siteID string, page 
 
 	requestBody, err := json.Marshal(payload)
 	if err != nil {
-		return nil, &domain.URLParsingError{Inner: err, NexposeURL: u.String()}
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewBuffer(requestBody))
