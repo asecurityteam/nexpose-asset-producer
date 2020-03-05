@@ -1,6 +1,7 @@
 package assetfetcher
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,18 +9,26 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
 
-// This const block helps format our request to the Nexpose sites asset endpoint:
+// This const block helps format our request to the Nexpose sites asset endpoint and the asset search endpoint:
 // GET /api/3/sites/{id}/assets (doc: https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getSiteAssets)
+// POST /api/3/assets/search (doc: https://help.rapid7.com/insightvm/en-us/api/index.html#operation/findAssets)
 const (
-	basePath       = "/api/3"
-	nexposeSite    = "/sites"
-	nexposeAssets  = "/assets"
-	pageQueryParam = "page" // The index of the page (zero-based) to retrieve.
-	sizeQueryParam = "size" // The number of records per page to retrieve.
+	allMatch           = "all"
+	basePath           = "/api/3"
+	isOnOrAferOperator = "is-on-or-after"
+	inOperator         = "in"
+	nexposeSite        = "/sites"
+	nexposeAssets      = "/assets"
+	nexposeSearch      = "/search"
+	pageQueryParam     = "page" // The index of the page (zero-based) to retrieve.
+	sizeQueryParam     = "size" // The number of records per page to retrieve.
+	scanDateField      = "last-scan-date"
+	siteIDField        = "site-id"
 )
 
 // SiteAssetsResponse is the structure of the Nexpose site assets response
@@ -52,6 +61,22 @@ type NexposeAssetFetcher struct {
 	PageSize int
 	// Stat Function to report custom statistics
 	StatFn domain.StatFn
+}
+
+// NexposeAssetSearchRequestBody represents the request body required to make an asset
+// search request against the Nexpose API
+type NexposeAssetSearchRequestBody struct {
+	Filters []SearchCriteria `json:"filters"`
+	Match   string           `json:"match"`
+}
+
+// SearchCriteria represents a 'Search Criteria' as defined by the Nexpose API. It is used
+// as criteria to filter down the results returned from the asset search API
+type SearchCriteria struct {
+	Field    string   `json:"field"`
+	Operator string   `json:"operator"`
+	Value    string   `json:"value,omitempty"`
+	Values   []string `json:"values,omitempty"`
 }
 
 // FetchAssets gets all the assets for a given site ID from Nexpose by calling `/api/3/sites/{id}/assets`
@@ -97,7 +122,7 @@ func (c *NexposeAssetFetcher) FetchAssets(ctx context.Context, siteID string) ([
 
 // fetchNexposeSiteAssetsPage makes a call to Nexpose to retrieve and return a particular page of assets in the form of SiteAssetsResponse
 func (c *NexposeAssetFetcher) fetchNexposeSiteAssetsPage(ctx context.Context, page int, siteID string) (SiteAssetsResponse, error) {
-	req, err := c.newNexposeSiteAssetsRequest(siteID, page)
+	req, err := c.newNexposeAssetsSearchRequest(siteID, page)
 	if err != nil {
 		return SiteAssetsResponse{}, err
 	}
@@ -135,6 +160,54 @@ func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page in
 	// the only time http.NewRequest returns an error is if there's a parsing error,
 	// which we already checked for earlier, so no need to check it again
 	req, err := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
+	if err != nil {
+		return nil, &domain.URLParsingError{Inner: err, NexposeURL: u.String()}
+	}
+	return req, nil
+}
+
+// newNexposeAssetsSearchRequest builds the request for the Nexpose Assets API and using the passed in siteID
+// for a Search Criteria and page for pagination purposes. It passes in the current date minus one day as a
+// search criteria to lessen the amount of assets returned from Nexpose
+func (c *NexposeAssetFetcher) newNexposeAssetsSearchRequest(siteID string, page int) (*http.Request, error) {
+	u, _ := url.Parse(c.Host.String())
+	u.Path = path.Join(u.Path, basePath, nexposeAssets, nexposeSearch)
+	q := u.Query()
+	q.Set(pageQueryParam, fmt.Sprint(page))
+	q.Set(sizeQueryParam, fmt.Sprint(c.PageSize))
+	u.RawQuery = q.Encode()
+
+	// Golang seems to not require YYYY-MM-DD for date formatting
+	// Yes, that is Golangs actual syntax for date formatting
+	currentDate := time.Now()
+	adjustedDate := currentDate.AddDate(0, 0, -1)
+	formattedDate := adjustedDate.Format("2006-01-02")
+
+	filters := []SearchCriteria{
+		SearchCriteria{
+			Field:    scanDateField,
+			Operator: isOnOrAferOperator,
+			Value:    formattedDate,
+		},
+		SearchCriteria{
+			Field:    siteIDField,
+			Operator: inOperator,
+			Values: []string{
+				siteID,
+			},
+		},
+	}
+	payload := NexposeAssetSearchRequestBody{
+		Filters: filters,
+		Match:   allMatch,
+	}
+
+	requestBody, err := json.Marshal(payload)
+	if err != nil {
+		return nil, &domain.URLParsingError{Inner: err, NexposeURL: u.String()}
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, &domain.URLParsingError{Inner: err, NexposeURL: u.String()}
 	}
