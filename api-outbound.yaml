@@ -49,16 +49,10 @@ info:
     name: Apache 2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
 paths:
-  /api/3/sites/{siteID}/assets:
-    get:
-      description: Nexpose API for retrieving paged assets linked with the specified site.
+  /api/3/assets/search:
+    post:
+      summary: Nexpose API for retrieving assets based upon filtered search criteria
       parameters:
-        - name: siteID
-          in: path
-          description: The identifier of the site.
-          required: true
-          schema:
-            type: integer
         - name: page
           in: query
           description: "The index of the page (zero-based) to retrieve."
@@ -71,6 +65,12 @@ paths:
           required: false
           schema:
             type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NexposeAssetSearchRequestBody' 
       responses:
         200:
           description: "Success"
@@ -91,35 +91,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/NexposeError'
       x-transportd:
-        backend: nexpose
-        enabled:
-          - "accesslog"
-          - "requestvalidation"
-          - "responsevalidation"
-          - "timeout"
-          - "retry"
-          - "basicauth"
-        timeout:
-          after: "2s"
-        retry:
-          backoff: "50ms"
-          limit: 3
-          codes:
-            - 500
-            - 501
-            - 502
-            - 503
-            - 504
-            - 505
-            - 506
-            - 507
-            - 508
-            - 509
-            - 510
-            - 511
-        basicauth:
-          username: "${NEXPOSE_API_USERNAME}"
-          password: "${NEXPOSE_API_PASSWORD}"
+          backend: nexpose
+          enabled:
+            - "accesslog"
+            - "metrics"
+            - "requestheaderinject"
+            - "requestvalidation"
+            - "responsevalidation"
+            - "timeout"
+            - "retry"
+            - "basicauth"
+          timeout:
+            after: "30s"
+          requestheaderinject:
+            headers:
+              Content-Type:
+              - "application/json"
+          retry:
+            backoff: "3s"
+            limit: 3
+            codes:
+              - 500
+              - 501
+              - 502
+              - 503
+              - 504
+              - 505
+              - 506
+              - 507
+              - 508
+              - 509
+              - 510
+              - 511
+          basicauth:
+            username: "${NEXPOSE_USERNAME}"
+            password: "${NEXPOSE_PASSWORD}"
   /api/3:
     get:
       description: Nexpose API root endpoint, used for verifying if Nexpose can be reached
@@ -278,7 +284,37 @@ components:
           description: The date the asset information was collected or changed.
         scanId:
           type: integer
-          descrtion: If a scan-oriented change, the identifier of the corresponding scan the asset was scanned in.
+          description: If a scan-oriented change, the identifier of the corresponding scan the asset was scanned in.
+    NexposeAssetSearchRequestBody:
+      type: object
+      description: The request body for the Nexpose Asset Search API
+      required:
+        - filters
+        - match
+      properties:
+        filters:
+          type: array
+          items:
+              $ref: '#/components/schemas/NexposeSearchCriteria'
+        match:
+          type: string
+    NexposeSearchCriteria:
+      type: object
+      description: Nexpose search criteria for filtering
+      required:
+        - field
+        - operator
+      properties:
+        field:
+          type: string
+        operator:
+          type: string
+        value:
+          type: string
+        values:
+          type: array
+          items:
+            type: string
     NexposeError:
       type: object
       properties:
