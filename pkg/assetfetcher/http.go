@@ -22,7 +22,6 @@ const (
 	basePath           = "/api/3"
 	isOnOrAferOperator = "is-on-or-after"
 	inOperator         = "in"
-	nexposeSite        = "/sites"
 	nexposeAssets      = "/assets"
 	nexposeSearch      = "/search"
 	pageQueryParam     = "page" // The index of the page (zero-based) to retrieve.
@@ -147,23 +146,6 @@ func (c *NexposeAssetFetcher) fetchNexposeSiteAssetsPage(ctx context.Context, pa
 	}
 
 	return siteAssetResp, nil
-}
-
-// newNexposeSiteAssetsRequest builds URL we'll use to make the request to Nexpose's site assets endpoint
-func (c *NexposeAssetFetcher) newNexposeSiteAssetsRequest(siteID string, page int) (*http.Request, error) {
-	u, _ := url.Parse(c.Host.String())
-	u.Path = path.Join(u.Path, basePath, nexposeSite, siteID, nexposeAssets)
-	q := u.Query()
-	q.Set(pageQueryParam, fmt.Sprint(page))
-	q.Set(sizeQueryParam, fmt.Sprint(c.PageSize))
-	u.RawQuery = q.Encode()
-	// the only time http.NewRequest returns an error is if there's a parsing error,
-	// which we already checked for earlier, so no need to check it again
-	req, err := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
-	if err != nil {
-		return nil, &domain.URLParsingError{Inner: err, NexposeURL: u.String()}
-	}
-	return req, nil
 }
 
 // newNexposeAssetsSearchRequest builds the request for the Nexpose Assets API and using the passed in siteID

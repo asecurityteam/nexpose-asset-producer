@@ -210,30 +210,6 @@ func TestFetchAssetsHTTPError(t *testing.T) {
 	assert.IsType(t, &domain.NexposeHTTPRequestError{}, err)
 }
 
-func TestNewNexposeSiteAssetsRequestSuccess(t *testing.T) {
-	host, _ := url.Parse("http://localhost")
-	assetFetcher := &NexposeAssetFetcher{
-		Host:     host,
-		PageSize: 100,
-		StatFn:   MockStatFn,
-	}
-	req, err := assetFetcher.newNexposeSiteAssetsRequest("siteID", 1)
-	assert.Nil(t, err)
-	assert.Equal(t, "http://localhost/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
-}
-
-func TestNewNexposeSiteAssetsRequestWithExtraSlashes(t *testing.T) {
-	host, _ := url.Parse("http://localhost")
-	assetFetcher := &NexposeAssetFetcher{
-		Host:     host,
-		PageSize: 100,
-		StatFn:   MockStatFn,
-	}
-	req, err := assetFetcher.newNexposeSiteAssetsRequest("/siteID/", 1)
-	assert.Nil(t, err)
-	assert.Equal(t, "http://localhost/api/3/sites/siteID/assets?page=1&size=100", req.URL.String())
-}
-
 func TestNewNexposeAssetsSearchRequestSuccess(t *testing.T) {
 	host, _ := url.Parse("http://localhost")
 	assetFetcher := &NexposeAssetFetcher{
@@ -242,6 +218,18 @@ func TestNewNexposeAssetsSearchRequestSuccess(t *testing.T) {
 		StatFn:   MockStatFn,
 	}
 	req, err := assetFetcher.newNexposeAssetsSearchRequest("siteID", 1)
+	assert.Nil(t, err)
+	assert.Equal(t, "http://localhost/api/3/assets/search?page=1&size=100", req.URL.String())
+}
+
+func TestNewNexposeAssetsSearchRequestWithExtraSlashes(t *testing.T) {
+	host, _ := url.Parse("http://localhost")
+	assetFetcher := &NexposeAssetFetcher{
+		Host:     host,
+		PageSize: 100,
+		StatFn:   MockStatFn,
+	}
+	req, err := assetFetcher.newNexposeAssetsSearchRequest("/siteID/", 1)
 	assert.Nil(t, err)
 	assert.Equal(t, "http://localhost/api/3/assets/search?page=1&size=100", req.URL.String())
 }
