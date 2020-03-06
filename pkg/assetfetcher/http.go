@@ -14,8 +14,7 @@ import (
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
 
-// This const block helps format our request to the Nexpose sites asset endpoint and the asset search endpoint:
-// GET /api/3/sites/{id}/assets (doc: https://help.rapid7.com/insightvm/en-us/api/index.html#operation/getSiteAssets)
+// This const block helps format our request to the Nexpose asset search endpoint:
 // POST /api/3/assets/search (doc: https://help.rapid7.com/insightvm/en-us/api/index.html#operation/findAssets)
 const (
 	allMatch           = "all"
