@@ -44,12 +44,7 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) e
 	stater.Count("totalassets", float64(len(totalAssets)), fmt.Sprintf("site:%s", in.SiteID))
 
 	var totalAssetsProduced float64
-	validAssets, errorlist := h.AssetValidator.ValidateAssets(ctx, totalAssets, in.ScanID)
-	if len(errorlist) > 0 {
-		for validationError := range errorlist {
-			logger.Error(validationError)
-		}
-	}
+	validAssets, invalidAssets := h.AssetValidator.ValidateAssets(ctx, totalAssets, in.ScanID)
 	for _, validAsset := range validAssets {
 		err := h.Producer.Produce(ctx, validAsset)
 		if err != nil {
@@ -65,6 +60,47 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) e
 
 	}
 	stater.Count("totalassetsproduced", totalAssetsProduced, fmt.Sprintf("site:%s", in.SiteID))
-
+	for _, validationErr := range invalidAssets {
+		var warningLog interface{}
+		switch validationErr.(type) {
+		case *domain.ScanIDForLastScanNotInAssetHistory:
+			validationErr := validationErr.(*domain.ScanIDForLastScanNotInAssetHistory)
+			warningLog = logs.AssetValidateFail{
+				Reason:        validationErr.Error(),
+				AssetID:       validationErr.AssetID,
+				AssetIP:       validationErr.AssetIP,
+				AssetHostname: validationErr.AssetHostname,
+				SiteID:        in.SiteID,
+			}
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "noscantimeforscanid"))
+		case *domain.InvalidScanTime:
+			validationErr := validationErr.(*domain.InvalidScanTime)
+			warningLog = logs.AssetValidateFail{
+				Reason:        validationErr.Error(),
+				AssetID:       validationErr.AssetID,
+				AssetIP:       validationErr.AssetIP,
+				AssetHostname: validationErr.AssetHostname,
+				SiteID:        in.SiteID,
+			}
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "invalidscantime"))
+		case *domain.MissingRequiredInformation:
+			validationErr := validationErr.(*domain.MissingRequiredInformation)
+			warningLog = logs.AssetValidateFail{
+				Reason:        validationErr.Error(),
+				AssetID:       validationErr.AssetID,
+				AssetIP:       validationErr.AssetIP,
+				AssetHostname: validationErr.AssetHostname,
+				SiteID:        in.SiteID,
+			}
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "missingfields"))
+		default:
+			warningLog = logs.AssetValidateFail{
+				Reason: validationErr.Error(),
+				SiteID: in.SiteID,
+			}
+			stater.Count("assetskipped", 1, fmt.Sprintf("site:%s", in.SiteID), fmt.Sprintf("reason:%s", "unknown"))
+		}
+		logger.Warn(warningLog)
+	}
 	return nil
 }
