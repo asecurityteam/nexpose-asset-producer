@@ -44,7 +44,7 @@ func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string) (
 			if strconv.FormatInt(evt.ScanID, 10) == scanID {
 				scanTime, err := time.Parse(time.RFC3339, evt.Date)
 				if err != nil {
-					return time.Time{}, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
+					return time.Time{}, &domain.InvalidScanTime{ScanID: scanID + "|" + scanids, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
 				}
 				if scanTime.IsZero() {
 					return time.Time{}, &domain.InvalidScanTime{ScanID: scanID + "|" + scanids, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("scan time is zero")}
@@ -53,7 +53,7 @@ func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string) (
 			}
 		}
 	}
-	return time.Time{}, &domain.ScanIDForLastScanNotInAssetHistory{ScanID: scanID, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
+	return time.Time{}, &domain.ScanIDForLastScanNotInAssetHistory{ScanID: scanID + "|" + scanids, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
 }
 
 // assetPayloadToAssetEvent translates a Nexpose Asset API response payload
