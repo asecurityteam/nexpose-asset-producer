@@ -7,6 +7,7 @@ import (
 // AssetValidatorConfig holds configuration that validates
 // assets from Nexpose
 type AssetValidatorConfig struct {
+	AgentSite string
 }
 
 // Name is used by the settings library and will add a "NEXPOSEVALIDATOR_"
@@ -27,5 +28,7 @@ func (*AssetValidatorComponent) Settings() *AssetValidatorConfig {
 // New constructs a NexposeAssetValidator from a config.
 func (*AssetValidatorComponent) New(_ context.Context, c *AssetValidatorConfig) (*NexposeAssetValidator, error) {
 
-	return &NexposeAssetValidator{}, nil
+	return &NexposeAssetValidator{
+		AgentSite: c.AgentSite,
+	}, nil
 }

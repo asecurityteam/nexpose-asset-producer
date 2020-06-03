@@ -44,7 +44,7 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) e
 	stater.Count("totalassets", float64(len(totalAssets)), fmt.Sprintf("site:%s", in.SiteID))
 
 	var totalAssetsProduced float64
-	validAssets, _ := h.AssetValidator.ValidateAssets(ctx, totalAssets, in.ScanID)
+	validAssets, _ := h.AssetValidator.ValidateAssets(ctx, totalAssets, in.ScanID, in.SiteID)
 	for _, validAsset := range validAssets {
 		err := h.Producer.Produce(ctx, validAsset)
 		if err != nil {

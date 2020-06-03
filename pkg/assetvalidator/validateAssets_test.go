@@ -10,9 +10,13 @@ import (
 )
 
 func TestAssetValidation(t *testing.T) {
+
+	nowish := time.Now().Round(time.Hour)
+
 	tests := []struct {
 		name                         string
 		assetList                    []domain.Asset
+		siteID                       string
 		expectedDomainAssetEventList []domain.AssetEvent
 		expectedErrorList            []error
 	}{
@@ -32,6 +36,7 @@ func TestAssetValidation(t *testing.T) {
 					History:  domain.AssetHistoryEvents{domain.AssetHistory{Type: "SCAN", ScanID: 6, Date: "2019-04-22T15:02:44.000Z"}},
 				},
 			},
+			"1",
 			[]domain.AssetEvent{
 				{
 					ID:       1,
@@ -62,6 +67,7 @@ func TestAssetValidation(t *testing.T) {
 					History: domain.AssetHistoryEvents{domain.AssetHistory{Type: "SCAN", ScanID: 6, Date: "2019-04-22T15:02:44.000Z"}},
 				},
 			},
+			"1",
 			[]domain.AssetEvent{
 				{
 					ID:       1,
@@ -90,6 +96,7 @@ func TestAssetValidation(t *testing.T) {
 					History:  domain.AssetHistoryEvents{domain.AssetHistory{Type: "SCAN", ScanID: 6, Date: "2019-04-22T15:02:44.000Z"}},
 				},
 			},
+			"1",
 			[]domain.AssetEvent{
 				{
 					ID:       1,
@@ -115,6 +122,7 @@ func TestAssetValidation(t *testing.T) {
 					History: domain.AssetHistoryEvents{domain.AssetHistory{Type: "SCAN", ScanID: 6, Date: "2019-04-22T15:02:44.000Z"}},
 				},
 			},
+			"1",
 			[]domain.AssetEvent{},
 			[]error{
 				&domain.MissingRequiredInformation{
@@ -140,6 +148,7 @@ func TestAssetValidation(t *testing.T) {
 					History:  domain.AssetHistoryEvents{domain.AssetHistory{Type: "CREATE", ScanID: 6, Date: "2019-04-22T15:02:44.000Z"}},
 				},
 			},
+			"1",
 			[]domain.AssetEvent{},
 			[]error{
 				&domain.ScanIDForLastScanNotInAssetHistory{
@@ -150,14 +159,45 @@ func TestAssetValidation(t *testing.T) {
 				},
 			},
 		},
+		{
+			"agent scan success case",
+			[]domain.Asset{
+				{
+					ID:       1,
+					IP:       "127.0.0.1",
+					HostName: "ec2-something-my-test-instance.com",
+					History:  domain.AssetHistoryEvents{domain.AssetHistory{Type: "SCAN", Date: nowish.Format(time.RFC3339)}},
+				},
+				{
+					ID:       2,
+					IP:       "127.0.0.2",
+					HostName: "ec2-something-my-test-instance2.com",
+					History:  domain.AssetHistoryEvents{domain.AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}},
+				},
+			},
+			"103",
+			[]domain.AssetEvent{
+				{
+					ID:       1,
+					IP:       "127.0.0.1",
+					Hostname: "ec2-something-my-test-instance.com",
+					ScanTime: nowish,
+				},
+			},
+			[]error{
+				&domain.InvalidScanTime{},
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(tt *testing.T) {
-			validator := NexposeAssetValidator{}
-			assetEventList, errorList := validator.ValidateAssets(context.Background(), test.assetList, "6")
+			validator := NexposeAssetValidator{
+				AgentSite: "103",
+			}
+			assetEventList, errorList := validator.ValidateAssets(context.Background(), test.assetList, "6", test.siteID)
 			assert.Equal(t, test.expectedDomainAssetEventList, assetEventList)
-			assert.Equal(t, test.expectedErrorList, errorList)
+			assert.IsType(t, test.expectedErrorList, errorList)
 		})
 	}
 }

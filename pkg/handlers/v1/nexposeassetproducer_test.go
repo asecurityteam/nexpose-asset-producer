@@ -29,7 +29,7 @@ func TestNexposeAssetProducerHandler(t *testing.T) {
 	validAssetList := []domain.AssetEvent{assetEvent}
 
 	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetList, nil)
-	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, "1").Return(validAssetList, []error{})
+	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, "1", gomock.Any()).Return(validAssetList, []error{})
 	mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 
 	handler := NexposeScannedAssetProducer{
@@ -71,7 +71,7 @@ func TestNexposeAssetProducerHandlerMultipleAssets(t *testing.T) {
 	}
 
 	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), siteID).Return(assetList, nil)
-	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanID).Return(validAssetList, []error{})
+	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanID, gomock.Any()).Return(validAssetList, []error{})
 	mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil).Times(numberOFAssets)
 	mockStatFn.EXPECT().Count("totalassets", float64(numberOFAssets), fmt.Sprintf("site:%s", siteID)).Times(1)
 	mockStatFn.EXPECT().Count("totalassetsproduced", float64(numberOFAssets), fmt.Sprintf("site:%s", siteID)).Times(1)
@@ -112,7 +112,7 @@ func TestNexposeAssetProducerHandlerError(t *testing.T) {
 	validAssetList := []domain.AssetEvent{assetEvent}
 
 	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetList, nil)
-	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanID).Return(validAssetList, []error{})
+	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanID, gomock.Any()).Return(validAssetList, []error{})
 	mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(errors.New("i am error"))
 	mockLogger.EXPECT().Error(gomock.Any())
 
@@ -186,7 +186,7 @@ func TestNexposeAssetProducerHandlerMultipleErrors(t *testing.T) {
 	errorList := []error{&domain.ScanIDForLastScanNotInAssetHistory{}, &domain.InvalidScanTime{}, &domain.MissingRequiredInformation{}, errors.New("unknown")}
 
 	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetList, nil)
-	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanID).Return(validAssetList, errorList)
+	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanID, gomock.Any()).Return(validAssetList, errorList)
 
 	handler := NexposeScannedAssetProducer{
 		Producer:       mockProducer,

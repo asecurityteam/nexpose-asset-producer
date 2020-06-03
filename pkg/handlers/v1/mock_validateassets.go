@@ -35,16 +35,16 @@ func (m *MockAssetValidator) EXPECT() *MockAssetValidatorMockRecorder {
 }
 
 // ValidateAssets mocks base method
-func (m *MockAssetValidator) ValidateAssets(ctx context.Context, assets []domain.Asset, scanID string) ([]domain.AssetEvent, []error) {
+func (m *MockAssetValidator) ValidateAssets(ctx context.Context, assets []domain.Asset, scanID string, siteID string) ([]domain.AssetEvent, []error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ValidateAssets", ctx, assets, scanID)
+	ret := m.ctrl.Call(m, "ValidateAssets", ctx, assets, scanID, siteID)
 	ret0, _ := ret[0].([]domain.AssetEvent)
 	ret1, _ := ret[1].([]error)
 	return ret0, ret1
 }
 
 // ValidateAssets indicates an expected call of ValidateAssets
-func (mr *MockAssetValidatorMockRecorder) ValidateAssets(ctx, assets, scanID interface{}) *gomock.Call {
+func (mr *MockAssetValidatorMockRecorder) ValidateAssets(ctx, assets, scanID interface{}, siteID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateAssets", reflect.TypeOf((*MockAssetValidator)(nil).ValidateAssets), ctx, assets, scanID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateAssets", reflect.TypeOf((*MockAssetValidator)(nil).ValidateAssets), ctx, assets, scanID, siteID)
 }
