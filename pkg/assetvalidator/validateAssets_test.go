@@ -11,7 +11,7 @@ import (
 
 func TestAssetValidation(t *testing.T) {
 
-	nowish, _ := time.Parse(time.RFC3339, time.Now().Round(time.Hour).Format(time.RFC3339)) // creates a reliable time.time object without a location value
+	// nowish, _ := time.Parse(time.RFC3339, time.Now().Round(time.Hour).Format(time.RFC3339)) // creates a reliable time.time object without a location value
 
 	tests := []struct {
 		name                         string
@@ -159,35 +159,35 @@ func TestAssetValidation(t *testing.T) {
 				},
 			},
 		},
-		{
-			"agent scan success case",
-			[]domain.Asset{
-				{
-					ID:       1,
-					IP:       "127.0.0.1",
-					HostName: "ec2-something-my-test-instance.com",
-					History:  domain.AssetHistoryEvents{domain.AssetHistory{Type: "SCAN", Date: nowish.Format(time.RFC3339)}},
-				},
-				{
-					ID:       2,
-					IP:       "127.0.0.2",
-					HostName: "ec2-something-my-test-instance2.com",
-					History:  domain.AssetHistoryEvents{domain.AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}},
-				},
-			},
-			"103",
-			[]domain.AssetEvent{
-				{
-					ID:       1,
-					IP:       "127.0.0.1",
-					Hostname: "ec2-something-my-test-instance.com",
-					ScanTime: nowish,
-				},
-			},
-			[]error{
-				&domain.InvalidScanTime{},
-			},
-		},
+		// {
+		// 	"agent scan success case",
+		// 	[]domain.Asset{
+		// 		{
+		// 			ID:       1,
+		// 			IP:       "127.0.0.1",
+		// 			HostName: "ec2-something-my-test-instance.com",
+		// 			History:  domain.AssetHistoryEvents{domain.AssetHistory{Type: "SCAN", Date: nowish.Format(time.RFC3339)}},
+		// 		},
+		// 		{
+		// 			ID:       2,
+		// 			IP:       "127.0.0.2",
+		// 			HostName: "ec2-something-my-test-instance2.com",
+		// 			History:  domain.AssetHistoryEvents{domain.AssetHistory{Type: "SCAN", Date: "2019-04-22T15:02:44.000Z"}},
+		// 		},
+		// 	},
+		// 	"103",
+		// 	[]domain.AssetEvent{
+		// 		{
+		// 			ID:       1,
+		// 			IP:       "127.0.0.1",
+		// 			Hostname: "ec2-something-my-test-instance.com",
+		// 			ScanTime: nowish,
+		// 		},
+		// 	},
+		// 	[]error{
+		// 		&domain.InvalidScanTime{},
+		// 	},
+		// },
 	}
 
 	for _, test := range tests {
