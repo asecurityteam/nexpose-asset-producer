@@ -3,7 +3,6 @@ package assetvalidator
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -41,11 +40,7 @@ func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []dom
 func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string, siteID string) (time.Time, error) {
 	for _, evt := range asset.History {
 		if evt.Type == "SCAN" {
-			fmt.Println(v.AgentSite)
-			fmt.Println(siteID)
-			fmt.Println(scanID)
-			fmt.Println(evt.ScanID)
-			if strconv.FormatInt(evt.ScanID, 10) == scanID || siteID == v.AgentSite {
+			if strconv.FormatInt(evt.ScanID, 10) == scanID || siteID == "2" {
 				scanTime, err := time.Parse(time.RFC3339, evt.Date)
 				if err != nil {
 					return time.Time{}, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
