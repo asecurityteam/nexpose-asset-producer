@@ -11,7 +11,7 @@ import (
 
 func TestAssetValidation(t *testing.T) {
 
-	nowish := time.Now().Round(time.Hour)
+	nowish, _ := time.Parse(time.RFC3339, time.Now().Round(time.Hour).Format(time.RFC3339)) // creates a reliable time.time object without a location value
 
 	tests := []struct {
 		name                         string
