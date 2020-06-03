@@ -187,6 +187,7 @@ func TestNexposeAssetProducerHandlerMultipleErrors(t *testing.T) {
 
 	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetList, nil)
 	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanID, gomock.Any()).Return(validAssetList, errorList)
+	mockLogger.EXPECT().Warn(gomock.Any()).Times(4)
 
 	handler := NexposeScannedAssetProducer{
 		Producer:       mockProducer,
