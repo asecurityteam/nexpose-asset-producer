@@ -24,7 +24,7 @@ services:
       SERVERFULL_RUNTIME_SIGNALS_OS_SIGNALS: 15 2
       NEXPOSE_HOST: http://gateway-outbound:8082
       NEXPOSE_PAGESIZE: 100
-      NEXPOSEVALIDATOR_AGENTSITE: 2
+      NEXPOSEVALIDATOR_AGENTSITE: "2"
       HTTPPRODUCER_ENDPOINT: http://gateway-outbound:8082/publish
   gateway-inbound:
     build:
