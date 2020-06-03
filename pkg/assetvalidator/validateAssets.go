@@ -50,9 +50,9 @@ func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string, s
 				if scanTime.IsZero() {
 					return time.Time{}, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("scan time is zero")}
 				}
-				if siteID == v.AgentSite && time.Since(scanTime).Hours() > 24 { // agent scans often lack scanIDs, so we validate them based on recency instead.
-					return time.Time{}, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("agent scan is more than one day old")}
-				}
+				// if siteID == v.AgentSite && time.Since(scanTime).Hours() > 24 { // agent scans often lack scanIDs, so we validate them based on recency instead.
+				// 	return time.Time{}, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("agent scan is more than one day old")}
+				// }
 				return scanTime, nil
 			}
 		}
