@@ -36,6 +36,7 @@ func main() {
 
 	assetValidatorComponent := &assetvalidator.AssetValidatorComponent{}
 	assetValidator := new(assetvalidator.NexposeAssetValidator)
+	assetValidator.AgentSite = os.Getenv("NEXPOSEVALIDATOR_AGENTSITE")
 	if err = settings.NewComponent(context.Background(), source, assetValidatorComponent, assetValidator); err != nil {
 		panic(err.Error())
 	}
