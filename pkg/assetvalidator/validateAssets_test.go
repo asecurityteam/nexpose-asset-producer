@@ -197,7 +197,7 @@ func TestAssetValidation(t *testing.T) {
 			}
 			assetEventList, errorList := validator.ValidateAssets(context.Background(), test.assetList, "6", test.siteID)
 			assert.Equal(t, test.expectedDomainAssetEventList, assetEventList)
-			assert.IsType(t, test.expectedErrorList, errorList)
+			assert.Equal(t, len(test.expectedErrorList), len(errorList))
 		})
 	}
 }
