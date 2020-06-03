@@ -42,6 +42,7 @@ func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string, s
 	for _, evt := range asset.History {
 		if evt.Type == "SCAN" {
 			fmt.Println(v.AgentSite)
+			fmt.Println(siteID)
 			fmt.Println(scanID)
 			fmt.Println(evt.ScanID)
 			if strconv.FormatInt(evt.ScanID, 10) == scanID || siteID == v.AgentSite {
