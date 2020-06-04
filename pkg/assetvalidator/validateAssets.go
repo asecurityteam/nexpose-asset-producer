@@ -41,18 +41,16 @@ func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []dom
 // that matches the ScanID of the scan completion event that triggered the pipeline.
 func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string, siteID string, logger domain.Logger) (time.Time, error) {
 	for _, evt := range asset.History {
+		scanTime, err := time.Parse(time.RFC3339, evt.Date)
 		if evt.Type == "SCAN" {
 			if strconv.FormatInt(evt.ScanID, 10) == scanID || siteID == "2" {
-				scanTime, err := time.Parse(time.RFC3339, evt.Date)
 				if err != nil {
 					return time.Time{}, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
 				}
 				if scanTime.IsZero() {
 					return time.Time{}, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("scan time is zero")}
 				}
-				// if siteID == v.AgentSite && time.Since(scanTime).Hours() > 24 { // agent scans often lack scanIDs, so we validate them based on recency instead.
-				// 	return time.Time{}, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("agent scan is more than one day old")}
-				// }
+
 				return scanTime, nil
 			}
 			logger.Warn(logs.AssetValidateFail{
@@ -66,6 +64,14 @@ func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string, s
 			Reason:  fmt.Sprintf("Not a SCAN Event: Site ID: %s, ScanTime: %s, ScanID: %d | Desired ScanID: %s", siteID, evt.Date, evt.ScanID, scanID),
 			AssetID: evt.ScanID,
 		})
+		if siteID == "2" && time.Since(scanTime).Hours() < 24 { // agent scans often lack scanIDs, so we validate them based on recency instead.
+			logger.Info(logs.AssetValidateFail{
+				Message: "agent-scan-success",
+				Reason:  fmt.Sprintf("Let agent scan through: Site ID: %s, ScanTime: %s, ScanID: %d | Desired ScanID: %s", siteID, evt.Date, evt.ScanID, scanID),
+				AssetID: evt.ScanID,
+			})
+			return scanTime, nil
+		}
 	}
 	logger.Warn(logs.AssetValidateFail{
 		Message: "No valid events",
