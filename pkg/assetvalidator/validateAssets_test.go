@@ -197,8 +197,10 @@ func TestAssetValidation(t *testing.T) {
 				AgentSite: "103",
 			}
 			mockCtrl := gomock.NewController(t)
+			mockLogger := NewMockLogger(mockCtrl)
 			defer mockCtrl.Finish()
-			assetEventList, errorList := validator.ValidateAssets(context.Background(), test.assetList, "6", test.siteID, NewMockLogger(mockCtrl))
+			mockLogger.EXPECT().Warn(gomock.Any()).AnyTimes()
+			assetEventList, errorList := validator.ValidateAssets(context.Background(), test.assetList, "6", test.siteID, mockLogger)
 			assert.Equal(t, test.expectedDomainAssetEventList, assetEventList)
 			assert.Equal(t, len(test.expectedErrorList), len(errorList))
 		})

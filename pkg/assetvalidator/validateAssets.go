@@ -56,12 +56,21 @@ func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string, s
 				return scanTime, nil
 			}
 			logger.Warn(logs.AssetValidateFail{
-				Message: fmt.Sprintf("Invalid SCAN event: Site ID: %s, ScanTime: %s, ScanID: %d | Desired ScanID: %s", siteID, evt.Date, evt.ScanID, scanID),
-				Reason:  "asset failed to validate via scanID",
+				Message: "invalid-scan-event",
+				Reason:  fmt.Sprintf("Invalid SCAN event: Site ID: %s, ScanTime: %s, ScanID: %d | Desired ScanID: %s", siteID, evt.Date, evt.ScanID, scanID),
 				AssetID: evt.ScanID,
 			})
 		}
+		logger.Warn(logs.AssetValidateFail{
+			Message: "not-scan-event",
+			Reason:  fmt.Sprintf("Not a SCAN Event: Site ID: %s, ScanTime: %s, ScanID: %d | Desired ScanID: %s", siteID, evt.Date, evt.ScanID, scanID),
+			AssetID: evt.ScanID,
+		})
 	}
+	logger.Warn(logs.AssetValidateFail{
+		Message: "No valid events",
+		Reason:  fmt.Sprintf("No scan events found: Site ID: %s, Total Events: %d | Desired ScanID: %s", siteID, len(asset.History), scanID),
+	})
 	return time.Time{}, &domain.ScanIDForLastScanNotInAssetHistory{ScanID: scanID, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
 }
 
