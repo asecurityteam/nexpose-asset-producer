@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
+	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -195,7 +196,9 @@ func TestAssetValidation(t *testing.T) {
 			validator := NexposeAssetValidator{
 				AgentSite: "103",
 			}
-			assetEventList, errorList := validator.ValidateAssets(context.Background(), test.assetList, "6", test.siteID)
+			mockCtrl := gomock.NewController(t)
+			defer mockCtrl.Finish()
+			assetEventList, errorList := validator.ValidateAssets(context.Background(), test.assetList, "6", test.siteID, NewMockLogger(mockCtrl))
 			assert.Equal(t, test.expectedDomainAssetEventList, assetEventList)
 			assert.Equal(t, len(test.expectedErrorList), len(errorList))
 		})

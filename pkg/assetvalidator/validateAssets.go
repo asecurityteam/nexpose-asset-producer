@@ -3,10 +3,12 @@ package assetvalidator
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
+	"github.com/asecurityteam/nexpose-asset-producer/pkg/logs"
 )
 
 // NexposeAssetValidator is used to validate a list of retrieved Assets
@@ -16,11 +18,11 @@ type NexposeAssetValidator struct {
 
 // ValidateAssets takes in a list of assets from Nexpose, and returns a list of valid Asset events, and a list of errors based
 // on defined validation rules
-func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []domain.Asset, scanID string, siteID string) ([]domain.AssetEvent, []error) {
+func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []domain.Asset, scanID string, siteID string, logger domain.Logger) ([]domain.AssetEvent, []error) {
 	assetEventListList := []domain.AssetEvent{}
 	errorList := []error{}
 	for _, asset := range assets {
-		scanTime, err := v.getScanTime(asset, scanID, siteID)
+		scanTime, err := v.getScanTime(asset, scanID, siteID, logger)
 		if err != nil {
 			errorList = append(errorList, err)
 			continue
@@ -37,7 +39,7 @@ func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []dom
 
 // getScanTime searches through the asset's event history for a scan event with the ScanID
 // that matches the ScanID of the scan completion event that triggered the pipeline.
-func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string, siteID string) (time.Time, error) {
+func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string, siteID string, logger domain.Logger) (time.Time, error) {
 	for _, evt := range asset.History {
 		if evt.Type == "SCAN" {
 			if strconv.FormatInt(evt.ScanID, 10) == scanID || siteID == "2" {
@@ -53,6 +55,11 @@ func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string, s
 				// }
 				return scanTime, nil
 			}
+			logger.Warn(logs.AssetValidateFail{
+				Message: fmt.Sprintf("Invalid SCAN event: Site ID: %s, ScanTime: %s, ScanID: %d | Desired ScanID: %s", siteID, evt.Date, evt.ScanID, scanID),
+				Reason:  "asset failed to validate via scanID",
+				AssetID: evt.ScanID,
+			})
 		}
 	}
 	return time.Time{}, &domain.ScanIDForLastScanNotInAssetHistory{ScanID: scanID, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
