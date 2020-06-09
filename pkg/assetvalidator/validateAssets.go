@@ -38,15 +38,20 @@ func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []dom
 // that matches the ScanID of the scan completion event that triggered the pipeline.
 func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanID string) (time.Time, error) {
 	for _, evt := range asset.History {
-		if evt.Type == "SCAN" {
+		scanTime, err := time.Parse(time.RFC3339, evt.Date)
+		switch evt.Type {
+		case "SCAN":
 			if strconv.FormatInt(evt.ScanID, 10) == scanID {
-				scanTime, err := time.Parse(time.RFC3339, evt.Date)
 				if err != nil {
 					return time.Time{}, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
 				}
 				if scanTime.IsZero() {
 					return time.Time{}, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("scan time is zero")}
 				}
+				return scanTime, nil
+			}
+		case "AGENT-IMPORT":
+			if time.Since(scanTime).Hours() < 24 {
 				return scanTime, nil
 			}
 		}
