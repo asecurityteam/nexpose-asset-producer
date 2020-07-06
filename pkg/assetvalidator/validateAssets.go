@@ -9,6 +9,7 @@ import (
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
 
+// ScanType is a type alias to signify type of scan, local or remote
 type ScanType string
 
 const (
