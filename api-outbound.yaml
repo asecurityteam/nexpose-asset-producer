@@ -70,7 +70,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NexposeAssetSearchRequestBody' 
+              $ref: '#/components/schemas/NexposeAssetSearchRequestBody'
       responses:
         200:
           description: "Success"
@@ -330,6 +330,7 @@ components:
         - id
         - hostname
         - scanTime
+        - scanType
       properties:
         scanTime:
           type: string
@@ -343,12 +344,16 @@ components:
         hostname:
           type: string
           description: The primary host name (local or FQDN) of the asset.
+        scanType:
+          type: string
+          description: The type of scan done on the asset, remote or local.
     AssetEventWithIP:
       type: object
       required:
         - id
         - ip
         - scanTime
+        - scanType
       properties:
         scanTime:
           type: string
@@ -362,6 +367,9 @@ components:
         ip:
           type: string
           description: The primary IPv4 or IPv6 address of the asset.
+        scanType:
+          type: string
+          description: The type of scan done on the asset, remote or local.
     Error:
       type: object
       properties:
