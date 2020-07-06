@@ -318,4 +318,6 @@ type AssetEvent struct {
 	ID int64
 	// The primary IPv4 or IPv6 address of the asset.
 	IP string
+	// The type of scan that was ran, local or remote
+	ScanType string
 }
