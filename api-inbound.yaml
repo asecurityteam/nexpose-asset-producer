@@ -120,7 +120,7 @@ components:
       required:
         - siteID
         - scanID
-        - beginningTime
+        - startTime
         - endTime
         - scanType
       properties:
@@ -134,7 +134,7 @@ components:
           type: string
           format: date-time
           description: The time the scan finished in ISO8601 format.
-        beginningTime:
+        startTime:
           type: string
           format: date-time
           description: The time the scan finished in ISO8601 format.

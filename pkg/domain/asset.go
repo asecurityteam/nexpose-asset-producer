@@ -328,8 +328,8 @@ type ScanInfo struct {
 	SiteID string `json:"siteID"`
 	// ScanID is the ID of the scan that just completed
 	ScanID string `json:"scanID"`
-	// BeginningTime is the start time of the scan
-	BeginningTime string `json"beginningTime"`
+	// StartTime is the start time of the scan
+	StartTime string `json"startTime"`
 	// EndTime is the end time of the scan
 	EndTime string `json"endTime"`
 	// ScanType is the type of the scan

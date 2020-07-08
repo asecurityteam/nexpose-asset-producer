@@ -60,7 +60,7 @@ func (v *NexposeAssetValidator) getScanTimeAndScanType(asset domain.Asset, scanI
 			}
 		}
 		if evt.Type == "AGENT-IMPORT" && scanInfo.ScanType == string(local) {
-			startScanTime, startErr := time.Parse(time.RFC3339, scanInfo.BeginningTime)
+			startScanTime, startErr := time.Parse(time.RFC3339, scanInfo.StartTime)
 			endScanTime, endErr := time.Parse(time.RFC3339, scanInfo.EndTime)
 			if err != nil || startErr != nil || endErr != nil {
 				return time.Time{}, remote, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}

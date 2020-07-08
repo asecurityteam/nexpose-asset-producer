@@ -36,10 +36,10 @@ func TestAssetValidation(t *testing.T) {
 				},
 			},
 			domain.ScanInfo{
-				ScanID:        "6",
-				ScanType:      "remote",
-				BeginningTime: "2019-04-21T15:02:44.000Z",
-				EndTime:       "2019-04-23T15:02:44.000Z",
+				ScanID:    "6",
+				ScanType:  "remote",
+				StartTime: "2019-04-21T15:02:44.000Z",
+				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
 			[]domain.AssetEvent{
 				{
@@ -74,10 +74,10 @@ func TestAssetValidation(t *testing.T) {
 				},
 			},
 			domain.ScanInfo{
-				ScanID:        "6",
-				ScanType:      "remote",
-				BeginningTime: "2019-04-21T15:02:44.000Z",
-				EndTime:       "2019-04-23T15:02:44.000Z",
+				ScanID:    "6",
+				ScanType:  "remote",
+				StartTime: "2019-04-21T15:02:44.000Z",
+				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
 			[]domain.AssetEvent{
 				{
@@ -110,10 +110,10 @@ func TestAssetValidation(t *testing.T) {
 				},
 			},
 			domain.ScanInfo{
-				ScanID:        "6",
-				ScanType:      "remote",
-				BeginningTime: "2019-04-21T15:02:44.000Z",
-				EndTime:       "2019-04-23T15:02:44.000Z",
+				ScanID:    "6",
+				ScanType:  "remote",
+				StartTime: "2019-04-21T15:02:44.000Z",
+				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
 			[]domain.AssetEvent{
 				{
@@ -143,10 +143,10 @@ func TestAssetValidation(t *testing.T) {
 				},
 			},
 			domain.ScanInfo{
-				ScanID:        "6",
-				ScanType:      "remote",
-				BeginningTime: "2019-04-21T15:02:44.000Z",
-				EndTime:       "2019-04-23T15:02:44.000Z",
+				ScanID:    "6",
+				ScanType:  "remote",
+				StartTime: "2019-04-21T15:02:44.000Z",
+				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
 			[]domain.AssetEvent{},
 			[]error{
@@ -173,10 +173,10 @@ func TestAssetValidation(t *testing.T) {
 				},
 			},
 			domain.ScanInfo{
-				ScanID:        "6",
-				ScanType:      "remote",
-				BeginningTime: "2019-04-21T15:02:44.000Z",
-				EndTime:       "2019-04-23T15:02:44.000Z",
+				ScanID:    "6",
+				ScanType:  "remote",
+				StartTime: "2019-04-21T15:02:44.000Z",
+				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
 			[]domain.AssetEvent{},
 			[]error{
@@ -199,10 +199,10 @@ func TestAssetValidation(t *testing.T) {
 				},
 			},
 			domain.ScanInfo{
-				ScanID:        "6",
-				ScanType:      "local",
-				BeginningTime: "2019-04-21T15:02:44.000Z",
-				EndTime:       "2019-04-23T15:02:44.000Z",
+				ScanID:    "6",
+				ScanType:  "local",
+				StartTime: "2019-04-21T15:02:44.000Z",
+				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
 			[]domain.AssetEvent{
 				{
@@ -226,10 +226,10 @@ func TestAssetValidation(t *testing.T) {
 				},
 			},
 			domain.ScanInfo{
-				ScanID:        "6",
-				ScanType:      "remote",
-				BeginningTime: "",
-				EndTime:       "2019-04-23T15:02:44.000Z",
+				ScanID:    "6",
+				ScanType:  "remote",
+				StartTime: "",
+				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
 			[]domain.AssetEvent{},
 			[]error{
