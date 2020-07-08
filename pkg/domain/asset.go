@@ -321,3 +321,17 @@ type AssetEvent struct {
 	// The type of scan that was ran, local or remote
 	ScanType string
 }
+
+// ScanInfo represents the fields we want from the incoming payload
+type ScanInfo struct {
+	// SiteID is the ID of the site that just got scanned
+	SiteID string `json:"siteID"`
+	// ScanID is the ID of the scan that just completed
+	ScanID string `json:"scanID"`
+	// BeginningTime is the start time of the scan
+	BeginningTime string `json"beginningTime"`
+	// EndTime is the end time of the scan
+	EndTime string `json"endTime"`
+	// ScanType is the type of the scan
+	ScanType string `json"scanType"`
+}

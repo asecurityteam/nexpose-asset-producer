@@ -8,14 +8,6 @@ import (
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/logs"
 )
 
-// ScanInfo represents the fields we want from the incoming payload
-type ScanInfo struct {
-	// SiteID is the ID of the site that just got scanned
-	SiteID string `json:"siteID"`
-	// ScanID is the ID of the scan that just completed
-	ScanID string `json:"scanID"`
-}
-
 // NexposeScannedAssetProducer is a lambda handler that fetches Nexpose Assets and sends them to an event stream
 type NexposeScannedAssetProducer struct {
 	Producer       domain.Producer
@@ -27,7 +19,7 @@ type NexposeScannedAssetProducer struct {
 
 // Handle is an AWS Lambda handler that takes in a SiteID for a Nexpose scan that has completed,
 // get all the assets in the site that was scanned and produces each asset to a stream
-func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) error {
+func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in domain.ScanInfo) error {
 	logger := h.LogFn(ctx)
 	stater := h.StatFn(ctx)
 	totalAssets, fetchError := h.AssetFetcher.FetchAssets(ctx, in.SiteID)
@@ -44,7 +36,7 @@ func (h *NexposeScannedAssetProducer) Handle(ctx context.Context, in ScanInfo) e
 	stater.Count("totalassets", float64(len(totalAssets)), fmt.Sprintf("site:%s", in.SiteID))
 
 	var totalAssetsProduced float64
-	validAssets, _ := h.AssetValidator.ValidateAssets(ctx, totalAssets, in.ScanID)
+	validAssets, _ := h.AssetValidator.ValidateAssets(ctx, totalAssets, in)
 	for _, validAsset := range validAssets {
 		err := h.Producer.Produce(ctx, validAsset)
 		if err != nil {

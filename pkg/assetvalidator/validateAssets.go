@@ -24,11 +24,11 @@ type NexposeAssetValidator struct {
 
 // ValidateAssets takes in a list of assets from Nexpose, and returns a list of valid Asset events, and a list of errors based
 // on defined validation rules
-func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []domain.Asset, scanID string) ([]domain.AssetEvent, []error) {
+func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []domain.Asset, scanInfo domain.ScanInfo) ([]domain.AssetEvent, []error) {
 	assetEventListList := []domain.AssetEvent{}
 	errorList := []error{}
 	for _, asset := range assets {
-		scanTime, scanType, err := v.getScanTimeAndScanType(asset, scanID)
+		scanTime, scanType, err := v.getScanTimeAndScanType(asset, scanInfo)
 		if err != nil {
 			errorList = append(errorList, err)
 			continue
@@ -45,27 +45,33 @@ func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []dom
 
 // getScanTimeAndScanType searches through the asset's event history for a scan event with the ScanID
 // that matches the ScanID of the scan completion event that triggered the pipeline, and also returns the type of scan.
-func (v *NexposeAssetValidator) getScanTimeAndScanType(asset domain.Asset, scanID string) (time.Time, ScanType, error) {
+func (v *NexposeAssetValidator) getScanTimeAndScanType(asset domain.Asset, scanInfo domain.ScanInfo) (time.Time, ScanType, error) {
 	for _, evt := range asset.History {
 		scanTime, err := time.Parse(time.RFC3339, evt.Date)
-		switch evt.Type {
-		case "SCAN":
-			if strconv.FormatInt(evt.ScanID, 10) == scanID {
+		if evt.Type == "SCAN" && scanInfo.ScanType == string(remote) {
+			if strconv.FormatInt(evt.ScanID, 10) == scanInfo.ScanID {
 				if err != nil {
-					return time.Time{}, remote, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
+					return time.Time{}, remote, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
 				}
 				if scanTime.IsZero() {
-					return time.Time{}, remote, &domain.InvalidScanTime{ScanID: scanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("scan time is zero")}
+					return time.Time{}, remote, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("scan time is zero")}
 				}
 				return scanTime, remote, nil
 			}
-		case "AGENT-IMPORT":
-			if time.Since(scanTime).Hours() < 24 {
+		}
+		if evt.Type == "AGENT-IMPORT" && scanInfo.ScanType == string(local) {
+			startScanTime, startErr := time.Parse(time.RFC3339, scanInfo.BeginningTime)
+			endScanTime, endErr := time.Parse(time.RFC3339, scanInfo.EndTime)
+			if err != nil || startErr != nil || endErr != nil {
+				return time.Time{}, remote, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
+			}
+
+			if scanTime.After(startScanTime) && scanTime.Before(endScanTime) {
 				return scanTime, local, nil
 			}
 		}
 	}
-	return time.Time{}, unknown, &domain.ScanIDForLastScanNotInAssetHistory{ScanID: scanID, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
+	return time.Time{}, unknown, &domain.ScanIDForLastScanNotInAssetHistory{ScanID: scanInfo.ScanID, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
 }
 
 // assetPayloadToAssetEvent translates a Nexpose Asset API response payload
