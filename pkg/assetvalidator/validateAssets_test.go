@@ -37,7 +37,7 @@ func TestAssetValidation(t *testing.T) {
 			},
 			domain.ScanInfo{
 				ScanID:    "6",
-				ScanType:  "remote",
+				ScanType:  "Scheduled",
 				StartTime: "2019-04-21T15:02:44.000Z",
 				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
@@ -75,7 +75,7 @@ func TestAssetValidation(t *testing.T) {
 			},
 			domain.ScanInfo{
 				ScanID:    "6",
-				ScanType:  "remote",
+				ScanType:  "Manual",
 				StartTime: "2019-04-21T15:02:44.000Z",
 				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
@@ -111,7 +111,7 @@ func TestAssetValidation(t *testing.T) {
 			},
 			domain.ScanInfo{
 				ScanID:    "6",
-				ScanType:  "remote",
+				ScanType:  "Automated",
 				StartTime: "2019-04-21T15:02:44.000Z",
 				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
@@ -144,7 +144,7 @@ func TestAssetValidation(t *testing.T) {
 			},
 			domain.ScanInfo{
 				ScanID:    "6",
-				ScanType:  "remote",
+				ScanType:  "Manual",
 				StartTime: "2019-04-21T15:02:44.000Z",
 				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
@@ -174,7 +174,6 @@ func TestAssetValidation(t *testing.T) {
 			},
 			domain.ScanInfo{
 				ScanID:    "6",
-				ScanType:  "remote",
 				StartTime: "2019-04-21T15:02:44.000Z",
 				EndTime:   "2019-04-23T15:02:44.000Z",
 			},
@@ -200,7 +199,7 @@ func TestAssetValidation(t *testing.T) {
 			},
 			domain.ScanInfo{
 				ScanID:    "6",
-				ScanType:  "local",
+				ScanType:  "Agent",
 				StartTime: "2019-04-21T15:02:44.000Z",
 				EndTime:   "2019-04-23T15:02:44.000Z",
 			},

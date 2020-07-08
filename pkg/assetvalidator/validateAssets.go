@@ -9,7 +9,18 @@ import (
 	"github.com/asecurityteam/nexpose-asset-producer/pkg/domain"
 )
 
-// ScanType is a type alias to signify type of scan, local or remote
+// NexposeScanType is a type alias to signify type of scan according to Nexpose
+type NexposeScanType string
+
+const (
+	automated NexposeScanType = "Automated"
+	manual    NexposeScanType = "Manual"
+	scheduled NexposeScanType = "Scheduled"
+	agent     NexposeScanType = "Agent"
+)
+
+// ScanType is a type alias to signify type generify scan, local or remote
+// The purpose is to not expose Nexpose specifics further down the pipeline
 type ScanType string
 
 const (
@@ -48,7 +59,7 @@ func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []dom
 func (v *NexposeAssetValidator) getScanTimeAndScanType(asset domain.Asset, scanInfo domain.ScanInfo) (time.Time, ScanType, error) {
 	for _, evt := range asset.History {
 		scanTime, err := time.Parse(time.RFC3339, evt.Date)
-		if evt.Type == "SCAN" && scanInfo.ScanType == string(remote) {
+		if evt.Type == "SCAN" && (scanInfo.ScanType == string(automated) || scanInfo.ScanType == string(manual) || scanInfo.ScanType == string(scheduled)) {
 			if strconv.FormatInt(evt.ScanID, 10) == scanInfo.ScanID {
 				if err != nil {
 					return time.Time{}, remote, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
@@ -59,7 +70,7 @@ func (v *NexposeAssetValidator) getScanTimeAndScanType(asset domain.Asset, scanI
 				return scanTime, remote, nil
 			}
 		}
-		if evt.Type == "AGENT-IMPORT" && scanInfo.ScanType == string(local) {
+		if evt.Type == "AGENT-IMPORT" && scanInfo.ScanType == string(agent) {
 			startScanTime, startErr := time.Parse(time.RFC3339, scanInfo.StartTime)
 			endScanTime, endErr := time.Parse(time.RFC3339, scanInfo.EndTime)
 			if err != nil || startErr != nil || endErr != nil {

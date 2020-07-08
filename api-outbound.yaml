@@ -347,6 +347,7 @@ components:
         scanType:
           type: string
           description: The type of scan done on the asset, remote or local.
+          enum: [local, remote]
     AssetEventWithIP:
       type: object
       required:
@@ -370,6 +371,7 @@ components:
         scanType:
           type: string
           description: The type of scan done on the asset, remote or local.
+          enum: [local, remote]
     Error:
       type: object
       properties:

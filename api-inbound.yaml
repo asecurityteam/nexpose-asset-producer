@@ -140,7 +140,8 @@ components:
           description: The time the scan finished in ISO8601 format.
         scanType:
           type: string
-          description: The type of scan done on the asset, remote or local.
+          description: The type of scan done on the asset.
+          enum: [Automated, Manual, Scheduled, Agent]
     Error:
       type: object
       properties:
