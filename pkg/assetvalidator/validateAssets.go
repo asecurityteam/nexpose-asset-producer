@@ -12,6 +12,10 @@ import (
 // NexposeScanType is a type alias to signify type of scan according to Nexpose
 type NexposeScanType string
 
+func (nst NexposeScanType) String() string {
+	return string(nst)
+}
+
 const (
 	automated NexposeScanType = "Automated"
 	manual    NexposeScanType = "Manual"
@@ -24,9 +28,8 @@ const (
 type ScanType string
 
 const (
-	local   ScanType = "local"
-	remote  ScanType = "remote"
-	unknown ScanType = "unknown"
+	local  ScanType = "local"
+	remote ScanType = "remote"
 )
 
 // NexposeAssetValidator is used to validate a list of retrieved Assets
@@ -39,12 +42,12 @@ func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []dom
 	assetEventListList := []domain.AssetEvent{}
 	errorList := []error{}
 	for _, asset := range assets {
-		scanTime, scanType, err := v.getScanTimeAndScanType(asset, scanInfo)
+		scanTime, err := v.getScanTime(asset, scanInfo)
 		if err != nil {
 			errorList = append(errorList, err)
 			continue
 		}
-		assetEvent, err := v.assetPayloadToAssetEvent(asset, scanTime, string(scanType))
+		assetEvent, err := v.assetPayloadToAssetEvent(asset, scanTime, scanInfo)
 		if err != nil {
 			errorList = append(errorList, err)
 			continue
@@ -54,48 +57,62 @@ func (v *NexposeAssetValidator) ValidateAssets(ctx context.Context, assets []dom
 	return assetEventListList, errorList
 }
 
-// getScanTimeAndScanType searches through the asset's event history for a scan event with the ScanID
+// getScanTime searches through the asset's event history for a scan event with the ScanID
 // that matches the ScanID of the scan completion event that triggered the pipeline, and also returns the type of scan.
-func (v *NexposeAssetValidator) getScanTimeAndScanType(asset domain.Asset, scanInfo domain.ScanInfo) (time.Time, ScanType, error) {
+func (v *NexposeAssetValidator) getScanTime(asset domain.Asset, scanInfo domain.ScanInfo) (time.Time, error) {
+	var scanType ScanType
+	nexposeScanType := NexposeScanType(scanInfo.ScanType)
+	if nexposeScanType == agent {
+		scanType = local
+	} else {
+		scanType = remote
+	}
 	for _, evt := range asset.History {
 		scanTime, err := time.Parse(time.RFC3339, evt.Date)
-		if evt.Type == "SCAN" && (scanInfo.ScanType == string(automated) || scanInfo.ScanType == string(manual) || scanInfo.ScanType == string(scheduled)) {
+		if evt.Type == "SCAN" && scanType == remote {
 			if strconv.FormatInt(evt.ScanID, 10) == scanInfo.ScanID {
 				if err != nil {
-					return time.Time{}, remote, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
+					return time.Time{}, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
 				}
 				if scanTime.IsZero() {
-					return time.Time{}, remote, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("scan time is zero")}
+					return time.Time{}, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: errors.New("scan time is zero")}
 				}
-				return scanTime, remote, nil
+				return scanTime, nil
 			}
 		}
-		if evt.Type == "AGENT-IMPORT" && scanInfo.ScanType == string(agent) {
+		if evt.Type == "AGENT-IMPORT" && scanType == local {
 			startScanTime, startErr := time.Parse(time.RFC3339, scanInfo.StartTime)
 			endScanTime, endErr := time.Parse(time.RFC3339, scanInfo.EndTime)
 			if err != nil || startErr != nil || endErr != nil {
-				return time.Time{}, remote, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
+				return time.Time{}, &domain.InvalidScanTime{ScanID: scanInfo.ScanID, ScanTime: scanTime, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName, Inner: err}
 			}
 
 			if scanTime.After(startScanTime) && scanTime.Before(endScanTime) {
-				return scanTime, local, nil
+				return scanTime, nil
 			}
 		}
 	}
-	return time.Time{}, unknown, &domain.ScanIDForLastScanNotInAssetHistory{ScanID: scanInfo.ScanID, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
+	return time.Time{}, &domain.ScanIDForLastScanNotInAssetHistory{ScanID: scanInfo.ScanID, AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
 }
 
 // assetPayloadToAssetEvent translates a Nexpose Asset API response payload
 // into an AssetEvent for downstream services.
-func (v *NexposeAssetValidator) assetPayloadToAssetEvent(asset domain.Asset, scanTime time.Time, scanType string) (domain.AssetEvent, error) {
+func (v *NexposeAssetValidator) assetPayloadToAssetEvent(asset domain.Asset, scanTime time.Time, scanInfo domain.ScanInfo) (domain.AssetEvent, error) {
 	if asset.ID == 0 || (asset.IP == "" && asset.HostName == "") {
 		return domain.AssetEvent{}, &domain.MissingRequiredInformation{AssetID: asset.ID, AssetIP: asset.IP, AssetHostname: asset.HostName}
+	}
+	var scanType ScanType
+	nexposeScanType := NexposeScanType(scanInfo.ScanType)
+	if nexposeScanType == agent {
+		scanType = local
+	} else {
+		scanType = remote
 	}
 	return domain.AssetEvent{
 		ID:       asset.ID,
 		Hostname: asset.HostName,
 		IP:       asset.IP,
 		ScanTime: scanTime,
-		ScanType: scanType,
+		ScanType: string(scanType),
 	}, nil
 }
