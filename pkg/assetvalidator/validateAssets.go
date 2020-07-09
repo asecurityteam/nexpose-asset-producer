@@ -19,7 +19,7 @@ const (
 	agent     NexposeScanType = "Agent"
 )
 
-// ScanType is a type alias to signify type generify scan, local or remote
+// ScanType is a type alias that generifies a scan to either local or remote
 // The purpose is to not expose Nexpose specifics further down the pipeline
 type ScanType string
 
