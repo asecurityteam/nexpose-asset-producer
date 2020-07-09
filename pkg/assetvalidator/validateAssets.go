@@ -27,6 +27,10 @@ const (
 // The purpose is to not expose Nexpose specifics further down the pipeline
 type ScanType string
 
+func (st ScanType) String() string {
+	return string(st)
+}
+
 const (
 	local  ScanType = "local"
 	remote ScanType = "remote"
