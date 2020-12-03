@@ -24,7 +24,6 @@ type assetEventPayload struct {
 	Hostname string    `json:"hostname,omitempty"`
 	ID       int64     `json:"id,omitempty"`
 	IP       string    `json:"ip,omitempty"`
-	ScanType string    `json:"scanType, omitempty"`
 }
 
 // Produce publishes sends the asset event to the streaming appliance
@@ -34,7 +33,6 @@ func (p *AssetProducer) Produce(ctx context.Context, asset domain.AssetEvent) er
 		Hostname: asset.Hostname,
 		ID:       asset.ID,
 		IP:       asset.IP,
-		ScanType: asset.ScanType,
 	}
 	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequest(http.MethodPost, p.Endpoint.String(), bytes.NewReader(body))

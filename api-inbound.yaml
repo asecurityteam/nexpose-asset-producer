@@ -120,9 +120,6 @@ components:
       required:
         - siteID
         - scanID
-        - startTime
-        - endTime
-        - scanType
       properties:
         scanID:
           type: string
@@ -130,18 +127,6 @@ components:
         siteID:
           type: string
           description: The Nexpose site ID for the site that just got scanned.
-        endTime:
-          type: string
-          format: date-time
-          description: The time the scan finished in ISO8601 format.
-        startTime:
-          type: string
-          format: date-time
-          description: The time the scan finished in ISO8601 format.
-        scanType:
-          type: string
-          description: The type of scan done on the asset.
-          enum: [Automated, Manual, Scheduled, Agent]
     Error:
       type: object
       properties:

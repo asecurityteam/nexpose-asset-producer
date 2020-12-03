@@ -27,12 +27,9 @@ func TestNexposeAssetProducerHandler(t *testing.T) {
 
 	assetList := []domain.Asset{asset}
 	validAssetList := []domain.AssetEvent{assetEvent}
-	scanInfo := domain.ScanInfo{
-		SiteID: "12345",
-		ScanID: "1",
-	}
+
 	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetList, nil)
-	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanInfo).Return(validAssetList, []error{})
+	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, "1").Return(validAssetList, []error{})
 	mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 
 	handler := NexposeScannedAssetProducer{
@@ -43,6 +40,10 @@ func TestNexposeAssetProducerHandler(t *testing.T) {
 		StatFn:         MockStatFn,
 	}
 
+	scanInfo := ScanInfo{
+		SiteID: "12345",
+		ScanID: "1",
+	}
 	err := handler.Handle(context.Background(), scanInfo)
 	assert.Nil(t, err)
 }
@@ -68,13 +69,9 @@ func TestNexposeAssetProducerHandlerMultipleAssets(t *testing.T) {
 		validAssetList = append(validAssetList, domain.AssetEvent{ID: int64(i)})
 
 	}
-	scanInfo := domain.ScanInfo{
-		SiteID: siteID,
-		ScanID: "1",
-	}
 
 	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), siteID).Return(assetList, nil)
-	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanInfo).Return(validAssetList, []error{})
+	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanID).Return(validAssetList, []error{})
 	mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil).Times(numberOFAssets)
 	mockStatFn.EXPECT().Count("totalassets", float64(numberOFAssets), fmt.Sprintf("site:%s", siteID)).Times(1)
 	mockStatFn.EXPECT().Count("totalassetsproduced", float64(numberOFAssets), fmt.Sprintf("site:%s", siteID)).Times(1)
@@ -87,6 +84,10 @@ func TestNexposeAssetProducerHandlerMultipleAssets(t *testing.T) {
 		StatFn:         func(ctx context.Context) domain.Stat { return mockStatFn },
 	}
 
+	scanInfo := ScanInfo{
+		SiteID: siteID,
+		ScanID: "1",
+	}
 	err := handler.Handle(context.Background(), scanInfo)
 	assert.Nil(t, err)
 }
@@ -109,13 +110,9 @@ func TestNexposeAssetProducerHandlerError(t *testing.T) {
 
 	assetList := []domain.Asset{asset}
 	validAssetList := []domain.AssetEvent{assetEvent}
-	scanInfo := domain.ScanInfo{
-		SiteID: "12345",
-		ScanID: "1",
-	}
 
 	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetList, nil)
-	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanInfo).Return(validAssetList, []error{})
+	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanID).Return(validAssetList, []error{})
 	mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(errors.New("i am error"))
 	mockLogger.EXPECT().Error(gomock.Any())
 
@@ -127,6 +124,10 @@ func TestNexposeAssetProducerHandlerError(t *testing.T) {
 		StatFn:         MockStatFn,
 	}
 
+	scanInfo := ScanInfo{
+		SiteID: "12345",
+		ScanID: "1",
+	}
 	err := handler.Handle(context.Background(), scanInfo)
 	assert.Nil(t, err)
 }
@@ -157,7 +158,7 @@ func TestNexposeAssetProducerHandlerFetchFailure(t *testing.T) {
 		StatFn:         MockStatFn,
 	}
 
-	scanInfo := domain.ScanInfo{
+	scanInfo := ScanInfo{
 		SiteID: "12345",
 		ScanID: "1",
 	}
@@ -181,14 +182,11 @@ func TestNexposeAssetProducerHandlerMultipleErrors(t *testing.T) {
 
 	assetList := []domain.Asset{asset}
 	validAssetList := []domain.AssetEvent{}
-	scanInfo := domain.ScanInfo{
-		SiteID: "12345",
-		ScanID: "1",
-	}
+
 	errorList := []error{&domain.ScanIDForLastScanNotInAssetHistory{}, &domain.InvalidScanTime{}, &domain.MissingRequiredInformation{}, errors.New("unknown")}
 
 	mockAssetFetcher.EXPECT().FetchAssets(gomock.Any(), "12345").Return(assetList, nil)
-	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanInfo).Return(validAssetList, errorList)
+	mockAssetValidator.EXPECT().ValidateAssets(gomock.Any(), assetList, scanID).Return(validAssetList, errorList)
 
 	handler := NexposeScannedAssetProducer{
 		Producer:       mockProducer,
@@ -198,6 +196,10 @@ func TestNexposeAssetProducerHandlerMultipleErrors(t *testing.T) {
 		StatFn:         MockStatFn,
 	}
 
+	scanInfo := ScanInfo{
+		SiteID: "12345",
+		ScanID: "1",
+	}
 	err := handler.Handle(context.Background(), scanInfo)
 	assert.Nil(t, err)
 }
