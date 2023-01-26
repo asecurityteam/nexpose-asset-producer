@@ -1,3 +1,6 @@
+# We no longer use Nexpose. 
+This repository is not maintained.
+
 <a id="markdown-nexpose-asset-producer" name="nexpose-asset-producer"></a>
 # nexpose-asset-producer - A service that produces scanned Nexpose assets to an event stream
 [![GoDoc](https://godoc.org/github.com/asecurityteam/nexpose-asset-producer?status.svg)](https://godoc.org/github.com/asecurityteam/nexpose-asset-producer)
